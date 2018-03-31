@@ -1,0 +1,71 @@
+#!/usr/local/bin/containerflight run
+version: 0.x
+
+docker:
+    dockerfile: |
+        FROM ubuntu:16.04
+
+        ENV http_proxy=${ENV:http_proxy}
+        ENV https_proxy=${ENV:https_proxy}
+
+        RUN apt-get update && \
+            export DEBIAN_FRONTEND=noninteractive && \
+            apt-get install -y curl libperl5.22 wget && \
+            rm -rf /var/lib/apt/lists/*
+
+        WORKDIR /tmp
+
+        RUN curl -L http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz \
+            | tar -xz --strip 1
+
+        RUN echo '\
+        # texlive.profile written on Thu Jul 13 07:45:12 2017 UTC\n\
+        # It will NOT be updated and reflects only the\n\
+        # installation profile at installation time.\n\
+        selected_scheme scheme-full\n\
+        TEXDIR /usr/local/texlive/2017\n\
+        TEXMFCONFIG ~/.texlive2017/texmf-config\n\
+        TEXMFHOME ~/texmf\n\
+        TEXMFLOCAL /usr/local/texlive/texmf-local\n\
+        TEXMFSYSCONFIG /usr/local/texlive/2017/texmf-config\n\
+        TEXMFSYSVAR /usr/local/texlive/2017/texmf-var\n\
+        TEXMFVAR ~/.texlive2017/texmf-var\n\
+        binary_x86_64-linux 1\n\
+        instopt_adjustpath 1\n\
+        instopt_adjustrepo 1\n\
+        instopt_letter 0\n\
+        instopt_portable 0\n\
+        instopt_write18_restricted 1\n\
+        tlpdbopt_autobackup 1\n\
+        tlpdbopt_backupdir tlpkg/backups\n\
+        tlpdbopt_create_formats 1\n\
+        tlpdbopt_desktop_integration 1\n\
+        tlpdbopt_file_assocs 1\n\
+        tlpdbopt_generate_updmap 0\n\
+        tlpdbopt_install_docfiles 1\n\
+        tlpdbopt_install_srcfiles 1\n\
+        tlpdbopt_post_code 1\n\
+        tlpdbopt_sys_bin /usr/local/bin\n\
+        tlpdbopt_sys_info /usr/local/info\n\
+        tlpdbopt_sys_man /usr/local/man\n\
+        tlpdbopt_w32_multi_user 1 \n'\
+        > texlive.profile
+
+        RUN ./install-tl --profile=texlive.profile
+
+        # set-up the host user/group environment 
+        RUN set -x ; \
+            groupadd -g ${GROUPID} ${GROUPNAME} ; \
+            adduser --uid ${USERID} --gid ${USERID} ${USERNAME} && exit 0 ; exit 1
+
+        USER ${USERNAME}
+
+        CMD [ "/bin/bash" ]
+
+    runargs: [
+        "-t",
+        "--rm",
+        "-a", "stdout",
+        "-v", "${PWD}:${PWD}",
+        "-w", "${PWD}"
+    ]
