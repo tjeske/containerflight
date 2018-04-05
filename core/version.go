@@ -18,9 +18,11 @@ import (
 	"github.com/blang/semver"
 )
 
+var versionStr = "0.1.0"
+
 // ContainerFlightVersion returns the current Container Flight version
 func ContainerFlightVersion() semver.Version {
-	containerFlightVersion, err := semver.Make("0.1.0")
+	containerFlightVersion, err := semver.Make(versionStr)
 	checkErr(err)
 	return containerFlightVersion
 }
