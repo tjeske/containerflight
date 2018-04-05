@@ -18,7 +18,7 @@ import (
 	"github.com/blang/semver"
 )
 
-var versionStr = "0.1.0"
+var versionStr = "0.2.0-snapshot"
 
 // ContainerFlightVersion returns the current Container Flight version
 func ContainerFlightVersion() semver.Version {
