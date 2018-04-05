@@ -42,6 +42,30 @@ func getResolvedParameters(env *environment) map[string]string {
 		"GROUPID":   env.groupID,
 		"HOME":      env.homeDir,
 		"PWD":       env.workingDir,
+		"SET_PROXY": `ENV http_proxy=${ENV:http_proxy}
+        ENV https_proxy=${ENV:https_proxy}`,
+		"USER_CTX": `RUN if ! getent group ${GROUPNAME} > /dev/null 2>&1; then \
+                ( \
+                # ubuntu
+                addgroup -g ${GROUPID} ${GROUPNAME} || \
+                # busybox
+                addgroup --gid ${GROUPID} ${GROUPNAME} || \
+                # fedora
+                groupadd --gid ${GROUPID} ${GROUPNAME} \
+                ) > /dev/null 2>&1 ; \
+            fi ; \
+            if ! getent passwd ${USERNAME} > /dev/null 2>&1; then \
+                ( \
+                # fedora
+                adduser --gid ${GROUPNAME} --no-create-home --uid ${USERID} ${USERNAME} || \
+                # ubuntu
+                adduser --no-create-home --uid ${USERID} --gecos "" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \
+                # busybox
+                adduser -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \
+                ) > /dev/null 2>&1 ; \
+            fi ;
+        
+        USER ${USERNAME}`,
 	}
 }
 
@@ -56,22 +80,26 @@ func getAppConfig(env *environment) yamlSpec {
 	// replace parameters
 	resolvedParameters := getResolvedParameters(env)
 	re := regexp.MustCompile("\\$\\{(.+?)\\}")
-	yamlFileStr = re.ReplaceAllStringFunc(yamlFileStr, func(match string) string {
-		trimmedMatch := match[2 : len(match)-1]
-		split := strings.Split(trimmedMatch, ":")
-		if len(split) == 1 {
-			if value, ok := resolvedParameters[split[0]]; ok {
-				// ${KEY}
-				return value
+	oldYamlFileStr := ""
+	for yamlFileStr != oldYamlFileStr {
+		oldYamlFileStr = yamlFileStr
+		yamlFileStr = re.ReplaceAllStringFunc(yamlFileStr, func(match string) string {
+			trimmedMatch := match[2 : len(match)-1]
+			split := strings.Split(trimmedMatch, ":")
+			if len(split) == 1 {
+				if value, ok := resolvedParameters[split[0]]; ok {
+					// ${KEY}
+					return value
+				}
+			} else if len(split) > 1 {
+				if split[0] == "ENV" {
+					// ${ENV:...}
+					return os.Getenv(split[1])
+				}
 			}
-		} else if len(split) > 1 {
-			if split[0] == "ENV" {
-				// ${ENV:...}
-				return os.Getenv(split[1])
-			}
-		}
-		return "<<ERROR!>>"
-	})
+			return "<<ERROR!>>"
+		})
+	}
 
 	// unmarshal yaml file
 	appFile := yamlSpec{}
