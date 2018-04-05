@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
@@ -97,8 +98,16 @@ func Run(args []string) {
 			break
 		}
 	}
+	var runCmd []string
+	if config.Gui {
+		runCmd = []string{
+			"-e", "DISPLAY=" + os.Getenv("DISPLAY"),
+			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
+		}
+	}
 
-	runCmd := append(additionalDockerArgs, runArgs...)
+	runCmd = append(runCmd, additionalDockerArgs...)
+	runCmd = append(runCmd, runArgs...)
 	runCmd = append(runCmd, containerLabel)
 	runCmd = append(runCmd, args[1:]...)
 

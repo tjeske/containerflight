@@ -27,6 +27,7 @@ import (
 // specification of an app file
 type yamlSpec struct {
 	Version string
+	Gui     bool
 	Docker  struct {
 		Dockerfile string
 		RunArgs    []string
