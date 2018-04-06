@@ -99,6 +99,15 @@ func Run(args []string) {
 		}
 	}
 	var runCmd []string
+
+	if config.Console {
+		runCmd = []string{
+			"-ti",
+			"-a", "stdin",
+			"-a", "stdout",
+		}
+	}
+
 	if config.Gui {
 		runCmd = []string{
 			"-e", "DISPLAY=" + os.Getenv("DISPLAY"),
