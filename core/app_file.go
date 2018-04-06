@@ -85,9 +85,20 @@ func replaceParameters(str *string, resolvedParams *map[string]string) {
 					return value
 				}
 			} else if len(split) > 1 {
-				if split[0] == "ENV" {
-					// ${ENV:...}
-					return os.Getenv(split[1])
+				switch split[0] {
+				case "ENV":
+					{
+						// ${ENV:...}
+						return os.Getenv(split[1])
+					}
+				case "APT_INSTALL":
+					{
+						// ${APT_INSTALL:...}
+						return `RUN apt-get update && \
+            export DEBIAN_FRONTEND=noninteractive && \
+            apt-get install -y` + strings.Join(split[1:], " ") + ` && \
+            rm -rf /var/lib/apt/lists/*`
+					}
 				}
 			}
 			return "<<ERROR!>>"
