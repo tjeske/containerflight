@@ -70,25 +70,17 @@ func getResolvedParameters(env *environment) map[string]string {
 	}
 }
 
-// read and parse app config file
-func getAppConfig(env *environment) yamlSpec {
-
-	// read the app file
-	yamlFileBytes, err := ioutil.ReadFile(env.appFile)
-	checkErr(err)
-	yamlFileStr := string(yamlFileBytes)
-
-	// replace parameters
-	resolvedParameters := getResolvedParameters(env)
+// search and replace parameters in string
+func replaceParameters(str *string, resolvedParams *map[string]string) {
 	re := regexp.MustCompile("\\$\\{(.+?)\\}")
 	oldYamlFileStr := ""
-	for yamlFileStr != oldYamlFileStr {
-		oldYamlFileStr = yamlFileStr
-		yamlFileStr = re.ReplaceAllStringFunc(yamlFileStr, func(match string) string {
+	for *str != oldYamlFileStr {
+		oldYamlFileStr = *str
+		*str = re.ReplaceAllStringFunc(*str, func(match string) string {
 			trimmedMatch := match[2 : len(match)-1]
 			split := strings.Split(trimmedMatch, ":")
 			if len(split) == 1 {
-				if value, ok := resolvedParameters[split[0]]; ok {
+				if value, ok := (*resolvedParams)[split[0]]; ok {
 					// ${KEY}
 					return value
 				}
@@ -101,11 +93,28 @@ func getAppConfig(env *environment) yamlSpec {
 			return "<<ERROR!>>"
 		})
 	}
+}
+
+// read and parse app config file
+func getAppConfig(env *environment) yamlSpec {
+
+	// read the app file
+	yamlFileBytes, err := ioutil.ReadFile(env.appFile)
+	checkErr(err)
+	str := string(yamlFileBytes)
+
+	// replace parameters
+	resolvedParams := getResolvedParameters(env)
+	replaceParameters(&str, &resolvedParams)
 
 	// unmarshal yaml file
 	appFile := yamlSpec{}
-	err = yaml.UnmarshalStrict([]byte(yamlFileStr), &appFile)
+	err = yaml.UnmarshalStrict([]byte(str), &appFile)
 	checkErr(err)
+
+	appFile.Docker.Dockerfile += "\n" + resolvedParams["USER_CTX"]
+	replaceParameters(&appFile.Docker.Dockerfile, &resolvedParams)
+
 	log.Debug("appFile: %v", appFile)
 
 	return appFile
