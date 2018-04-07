@@ -30,7 +30,7 @@ var exportCmd = &cobra.Command{
 
 // exportCmd represents the export dockerfile command
 var dockerFileCmd = &cobra.Command{
-	Use:   "dockerfile [OPTIONS] FLYFILE",
+	Use:   "dockerfile [OPTIONS] APPFILE",
 	Short: "Show the processed Dockerfile",
 	Long:  `Show the processed Dockerfile of the app container`,
 	Args:  cli.RequiresRangeArgs(1, 1),
