@@ -66,7 +66,7 @@
     "templates"
   ]
   revision = "v17.12.1-ce"
-  source = "github.com/tjeske/fly-docker-cli"
+  source = "github.com/tjeske/containerflight-docker-cli"
 
 [[projects]]
   name = "github.com/docker/distribution"
@@ -165,8 +165,8 @@
 [[projects]]
   name = "github.com/go-yaml/yaml"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -395,6 +395,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "956d07d85a6af31b193d2879391a1e3100838149d4bae7da94e58b5db7536298"
+  inputs-digest = "dbb231dadccd01927e87cf422acda60f0720a1f1945226165ee0749aeae062df"
   solver-name = "gps-cdcl"
   solver-version = 1
