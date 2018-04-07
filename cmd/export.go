@@ -21,14 +21,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// exportCmd represents the export command
+// exportCmd represents the "export" command
 var exportCmd = &cobra.Command{
 	Use:   "export",
 	Short: "Export the container description",
 	Long:  `Export the container description`,
 }
 
-// exportCmd represents the export dockerfile command
+// dockerFileCmd represents the "export dockerfile" command
 var dockerFileCmd = &cobra.Command{
 	Use:   "dockerfile [OPTIONS] APPFILE",
 	Short: "Show the processed Dockerfile",
@@ -40,9 +40,22 @@ var dockerFileCmd = &cobra.Command{
 	},
 }
 
+// dockerRunArgsCmd represents the "export dockerrunargs" command
+var dockerRunArgsCmd = &cobra.Command{
+	Use:   "dockerrunargs [OPTIONS] APPFILE",
+	Short: "Show the Docker run args",
+	Long:  `Show the arguments for \"docker run\" which are used to run the Docker container`,
+	Args:  cli.RequiresRangeArgs(1, 1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		core.PrintDockerRunArgs(args[0])
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(exportCmd)
 	exportCmd.AddCommand(dockerFileCmd)
+	exportCmd.AddCommand(dockerRunArgsCmd)
 	flags := dockerFileCmd.Flags()
 	flags.SetInterspersed(false)
 }

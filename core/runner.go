@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -56,6 +57,16 @@ func PrintDockerfile(appFile string) {
 	fmt.Println(config.Docker.Dockerfile)
 }
 
+// PrintDockerRunArgs show the resulting "docker run" arguments
+func PrintDockerRunArgs(appFile string) {
+
+	config := getProcessedAppConfig(appFile)
+	containerLabel := getDockerContainerLabel(appFile, config.Docker.Dockerfile)
+	runCmdArgs := getRunCmdArgs(&config, &containerLabel, []string{})
+
+	fmt.Println("\"docker run\" is called with the following arguments:\n" + strings.Join(runCmdArgs, " "))
+}
+
 // Run starts an app in a container.
 // If the container does not exists it is built upfront.
 func Run(args []string) {
@@ -88,6 +99,12 @@ func Run(args []string) {
 		dockerClient.build(&config.Docker.Dockerfile)
 	}
 
+	runCmdArgs := getRunCmdArgs(&config, &containerLabel, args)
+
+	dockerClient.run(&runCmdArgs)
+}
+
+func getRunCmdArgs(config *yamlSpec, containerLabel *string, args []string) []string {
 	// set hostname if the user has not specified it
 	additionalDockerArgs := []string{"-h", "flybydocker"}
 	runArgs := config.Docker.RunArgs
@@ -98,10 +115,10 @@ func Run(args []string) {
 			break
 		}
 	}
-	var runCmd []string
+	var runCmdArgs []string
 
 	if config.Console {
-		runCmd = []string{
+		runCmdArgs = []string{
 			"-ti",
 			"-a", "stdin",
 			"-a", "stdout",
@@ -109,16 +126,18 @@ func Run(args []string) {
 	}
 
 	if config.Gui {
-		runCmd = []string{
+		runCmdArgs = []string{
 			"-e", "DISPLAY=" + os.Getenv("DISPLAY"),
 			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
 		}
 	}
 
-	runCmd = append(runCmd, additionalDockerArgs...)
-	runCmd = append(runCmd, runArgs...)
-	runCmd = append(runCmd, containerLabel)
-	runCmd = append(runCmd, args[1:]...)
+	runCmdArgs = append(runCmdArgs, additionalDockerArgs...)
+	runCmdArgs = append(runCmdArgs, runArgs...)
+	runCmdArgs = append(runCmdArgs, *containerLabel)
+	if len(args) > 1 {
+		runCmdArgs = append(runCmdArgs, args[1:]...)
+	}
 
-	dockerClient.run(&runCmd)
+	return runCmdArgs
 }
