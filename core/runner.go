@@ -118,7 +118,13 @@ func getRunCmdArgs(config *yamlSpec, containerLabel *string, args []string) []st
 	var runCmdArgs []string
 
 	if config.Console {
-		runCmdArgs = append(runCmdArgs, "-ti")
+		fi, _ := os.Stdin.Stat()
+		if (fi.Mode() & os.ModeCharDevice) == 0 {
+			// input from pipe
+			runCmdArgs = append(runCmdArgs, "-i")
+		} else {
+			runCmdArgs = append(runCmdArgs, "-ti")
+		}
 	}
 
 	if config.Gui {
