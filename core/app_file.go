@@ -59,9 +59,9 @@ func getResolvedParameters(env *environment) map[string]string {
             if ! getent passwd ${USERNAME} > /dev/null 2>&1; then \
                 ( \
                 # fedora
-                adduser --gid ${GROUPNAME} --no-create-home --uid ${USERID} ${USERNAME} || \
+                adduser --gid ${GROUPNAME} --uid ${USERID} ${USERNAME} || \
                 # ubuntu
-                adduser --no-create-home --uid ${USERID} --gecos "" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \
+                adduser --uid ${USERID} --gecos "" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \
                 # busybox
                 adduser -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \
                 ) > /dev/null 2>&1 ; \
