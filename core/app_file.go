@@ -95,10 +95,13 @@ func replaceParameters(str *string, resolvedParams *map[string]string) {
 				case "APT_INSTALL":
 					{
 						// ${APT_INSTALL:...}
-						return `RUN apt-get update && \
-            export DEBIAN_FRONTEND=noninteractive && \
-            apt-get install -y` + strings.Join(split[1:], " ") + ` && \
-            rm -rf /var/lib/apt/lists/*`
+						split := strings.Split(split[1], ",")
+						if len(split) >= 1 {
+							return `RUN apt-get update && \
+                            export DEBIAN_FRONTEND=noninteractive && \
+                            apt-get install -y` + strings.Join(split, " ") + ` && \
+                            rm -rf /var/lib/apt/lists/*`
+						}
 					}
 				}
 			}
