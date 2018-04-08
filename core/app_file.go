@@ -44,40 +44,42 @@ func getResolvedParameters(env *environment) map[string]string {
 		"GROUPID":   env.groupID,
 		"HOME":      env.homeDir,
 		"PWD":       env.workingDir,
-		"SET_PROXY": `ENV http_proxy=${ENV:http_proxy}
-        ENV https_proxy=${ENV:https_proxy}`,
-		"USER_CTX": `RUN if ! getent group ${GROUPNAME} > /dev/null 2>&1; then \
-                ( \
-                # ubuntu
-                addgroup -g ${GROUPID} ${GROUPNAME} || \
-                # busybox
-                addgroup --gid ${GROUPID} ${GROUPNAME} || \
-                # fedora
-                groupadd --gid ${GROUPID} ${GROUPNAME} \
-                ) > /dev/null 2>&1 ; \
-            fi ; \
-            if ! getent passwd ${USERNAME} > /dev/null 2>&1; then \
-                ( \
-                # fedora
-                adduser --gid ${GROUPNAME} --uid ${USERID} ${USERNAME} || \
-                # ubuntu
-                adduser --uid ${USERID} --gecos "" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \
-                # busybox
-                adduser -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \
-                ) > /dev/null 2>&1 ; \
-            fi ;
-        
-        USER ${USERNAME}`,
+		"SET_PROXY": "ENV http_proxy=${ENV:http_proxy}\n" +
+			"ENV https_proxy=${ENV:https_proxy}\n" +
+			"ENV no_proxy=${ENV:no_proxy}\n",
+		"USER_CTX": "RUN if ! getent group ${GROUPNAME} > /dev/null 2>&1; then \\\n" +
+			"        ( \\\n" +
+			"            # ubuntu\\\n" +
+			"            addgroup -g ${GROUPID} ${GROUPNAME} || \\\n" +
+			"            # busybox\\\n" +
+			"            addgroup --gid ${GROUPID} ${GROUPNAME} || \\\n" +
+			"            # fedora\\\n" +
+			"            groupadd --gid ${GROUPID} ${GROUPNAME} \\\n" +
+			"        ) > /dev/null 2>&1 ; \\\n" +
+			"    fi ; \\\n" +
+			"    if ! getent passwd ${USERNAME} > /dev/null 2>&1; then \\\n" +
+			"        ( \\\n" +
+			"            # fedora\\\n" +
+			"            adduser --gid ${GROUPNAME} --uid ${USERID} ${USERNAME} || \\\n" +
+			"            # ubuntu\\\n" +
+			"            adduser --uid ${USERID} --gecos \"\" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \\\n" +
+			"            # busybox\\\n" +
+			"            adduser -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \\\n" +
+			"        ) > /dev/null 2>&1 ; \\\n" +
+			"    fi ;\n\n" +
+			"USER ${USERNAME}",
 	}
 }
 
+var parameterRegex = regexp.MustCompile("\\$\\{(.+?)\\}")
+var setProxyRegex = regexp.MustCompile("(^.*FROM.*?\n)")
+
 // search and replace parameters in string
 func replaceParameters(str *string, resolvedParams *map[string]string) {
-	re := regexp.MustCompile("\\$\\{(.+?)\\}")
 	oldYamlFileStr := ""
 	for *str != oldYamlFileStr {
 		oldYamlFileStr = *str
-		*str = re.ReplaceAllStringFunc(*str, func(match string) string {
+		*str = parameterRegex.ReplaceAllStringFunc(*str, func(match string) string {
 			trimmedMatch := match[2 : len(match)-1]
 			split := strings.Split(trimmedMatch, ":")
 			if len(split) == 1 {
@@ -97,10 +99,10 @@ func replaceParameters(str *string, resolvedParams *map[string]string) {
 						// ${APT_INSTALL:...}
 						split := strings.Split(split[1], ",")
 						if len(split) >= 1 {
-							return `RUN apt-get update && \
-                            export DEBIAN_FRONTEND=noninteractive && \
-                            apt-get install -y` + strings.Join(split, " ") + ` && \
-                            rm -rf /var/lib/apt/lists/*`
+							return "RUN apt-get update && \\\n" +
+								"    export DEBIAN_FRONTEND=noninteractive && \\\n" +
+								"    apt-get install -y" + strings.Join(split, " ") + " && \\\n" +
+								"    rm -rf /var/lib/apt/lists/*"
 						}
 					}
 				}
@@ -118,17 +120,22 @@ func getAppConfig(env *environment) yamlSpec {
 	checkErr(err)
 	str := string(yamlFileBytes)
 
-	// replace parameters
-	resolvedParams := getResolvedParameters(env)
-	replaceParameters(&str, &resolvedParams)
-
 	// unmarshal yaml file
 	appFile := yamlSpec{}
 	err = yaml.UnmarshalStrict([]byte(str), &appFile)
 	checkErr(err)
 
+	resolvedParams := getResolvedParameters(env)
+
+	replacedStr := "${1}" + "\n" + resolvedParams["SET_PROXY"]
+	appFile.Docker.Dockerfile = setProxyRegex.ReplaceAllString(appFile.Docker.Dockerfile, replacedStr)
 	appFile.Docker.Dockerfile += "\n" + resolvedParams["USER_CTX"]
+
+	// replace parameters
 	replaceParameters(&appFile.Docker.Dockerfile, &resolvedParams)
+	for i := range appFile.Docker.RunArgs {
+		replaceParameters(&appFile.Docker.RunArgs[i], &resolvedParams)
+	}
 
 	log.Debug("appFile: %v", appFile)
 
