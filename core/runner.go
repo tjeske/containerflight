@@ -118,16 +118,14 @@ func getRunCmdArgs(config *yamlSpec, containerLabel *string, args []string) []st
 	var runCmdArgs []string
 
 	if config.Console {
-		runCmdArgs = []string{
-			"-ti",
-		}
+		runCmdArgs = append(runCmdArgs, "-ti")
 	}
 
 	if config.Gui {
-		runCmdArgs = []string{
-			"-e", "DISPLAY=" + os.Getenv("DISPLAY"),
+		runCmdArgs = append(runCmdArgs,
+			"-e", "DISPLAY="+os.Getenv("DISPLAY"),
 			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
-		}
+		)
 	}
 
 	runCmdArgs = append(runCmdArgs, additionalDockerArgs...)
