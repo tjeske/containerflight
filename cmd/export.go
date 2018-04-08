@@ -28,7 +28,14 @@ var exportCmd = &cobra.Command{
 	Long:  `Export the container description`,
 }
 
-// dockerFileCmd represents the "export dockerfile" command
+// dockerCmd represents the "export docker" command
+var dockerCmd = &cobra.Command{
+	Use:   "docker",
+	Short: "Show Dockerfile or \"docker run\" arguments",
+	Long:  `Show Dockerfile or "docker run" arguments`,
+}
+
+// dockerFileCmd represents the "export docker dockerfile" command
 var dockerFileCmd = &cobra.Command{
 	Use:   "dockerfile [OPTIONS] APPFILE",
 	Short: "Show the processed Dockerfile",
@@ -40,11 +47,11 @@ var dockerFileCmd = &cobra.Command{
 	},
 }
 
-// dockerRunArgsCmd represents the "export dockerrunargs" command
+// dockerRunArgsCmd represents the "export docker runargs" command
 var dockerRunArgsCmd = &cobra.Command{
-	Use:   "dockerrunargs [OPTIONS] APPFILE",
+	Use:   "runargs [OPTIONS] APPFILE",
 	Short: "Show the Docker run args",
-	Long:  `Show the arguments for \"docker run\" which are used to run the Docker container`,
+	Long:  `Show the arguments for "docker run" which are used to run the Docker container`,
 	Args:  cli.RequiresRangeArgs(1, 1),
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -54,8 +61,9 @@ var dockerRunArgsCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(exportCmd)
-	exportCmd.AddCommand(dockerFileCmd)
-	exportCmd.AddCommand(dockerRunArgsCmd)
+	exportCmd.AddCommand(dockerCmd)
+	dockerCmd.AddCommand(dockerFileCmd)
+	dockerCmd.AddCommand(dockerRunArgsCmd)
 	flags := dockerFileCmd.Flags()
 	flags.SetInterspersed(false)
 }
