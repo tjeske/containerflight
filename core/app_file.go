@@ -131,6 +131,40 @@ func getAppConfig(env *environment) yamlSpec {
 	appFile.Docker.Dockerfile = setProxyRegex.ReplaceAllString(appFile.Docker.Dockerfile, replacedStr)
 	appFile.Docker.Dockerfile += "\n" + resolvedParams["USER_CTX"]
 
+	defaultDockerArgs := map[string]string{
+		"-h": "flybydocker",
+		"-w": "${PWD}",
+	}
+	for _, arg := range appFile.Docker.RunArgs {
+		if _, ok := defaultDockerArgs[arg]; ok {
+			delete(defaultDockerArgs, arg)
+		}
+	}
+
+	appFile.Docker.RunArgs = append([]string{"-v", "${PWD}:${PWD}"}, appFile.Docker.RunArgs...)
+
+	if appFile.Console {
+		fi, _ := os.Stdin.Stat()
+		if (fi.Mode() & os.ModeCharDevice) == 0 {
+			// input from pipe
+			appFile.Docker.RunArgs = append(appFile.Docker.RunArgs, "-i")
+		} else {
+			appFile.Docker.RunArgs = append(appFile.Docker.RunArgs, "-ti")
+		}
+	}
+
+	if appFile.Gui {
+		appFile.Docker.RunArgs = append(appFile.Docker.RunArgs,
+			"-e", "DISPLAY="+os.Getenv("DISPLAY"),
+			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
+		)
+	}
+
+	// take default values of unset Docker arguments
+	for key, value := range defaultDockerArgs {
+		appFile.Docker.RunArgs = append(appFile.Docker.RunArgs, key, value)
+	}
+
 	// replace parameters
 	replaceParameters(&appFile.Docker.Dockerfile, &resolvedParams)
 	for i := range appFile.Docker.RunArgs {

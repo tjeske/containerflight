@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -105,36 +104,10 @@ func Run(args []string) {
 }
 
 func getRunCmdArgs(config *yamlSpec, containerLabel *string, args []string) []string {
-	// set hostname if the user has not specified it
-	additionalDockerArgs := []string{"-h", "flybydocker"}
+
+	runCmdArgs := []string{}
+
 	runArgs := config.Docker.RunArgs
-	for i := 0; i < len(runArgs); i++ {
-		arg := runArgs[i]
-		if arg == "-h" {
-			additionalDockerArgs = []string{}
-			break
-		}
-	}
-	var runCmdArgs []string
-
-	if config.Console {
-		fi, _ := os.Stdin.Stat()
-		if (fi.Mode() & os.ModeCharDevice) == 0 {
-			// input from pipe
-			runCmdArgs = append(runCmdArgs, "-i")
-		} else {
-			runCmdArgs = append(runCmdArgs, "-ti")
-		}
-	}
-
-	if config.Gui {
-		runCmdArgs = append(runCmdArgs,
-			"-e", "DISPLAY="+os.Getenv("DISPLAY"),
-			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
-		)
-	}
-
-	runCmdArgs = append(runCmdArgs, additionalDockerArgs...)
 	runCmdArgs = append(runCmdArgs, runArgs...)
 	runCmdArgs = append(runCmdArgs, *containerLabel)
 	if len(args) > 1 {
