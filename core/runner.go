@@ -120,8 +120,6 @@ func getRunCmdArgs(config *yamlSpec, containerLabel *string, args []string) []st
 	if config.Console {
 		runCmdArgs = []string{
 			"-ti",
-			"-a", "stdin",
-			"-a", "stdout",
 		}
 	}
 
