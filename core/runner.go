@@ -30,10 +30,10 @@ import (
 
 // load an app file, process it and return its content as a struct
 func getProcessedAppConfig(appFile string) yamlSpec {
-	absContainerFlightFile, err := filepath.Abs(appFile)
+	absAppFile, err := filepath.Abs(appFile)
 	checkErr(err)
 
-	env := getEnv(absContainerFlightFile)
+	env := getEnv(absAppFile)
 
 	config := getAppConfig(env)
 
@@ -62,7 +62,7 @@ func PrintDockerRunArgs(appFile string) {
 
 	config := getProcessedAppConfig(appFile)
 	containerLabel := getDockerContainerLabel(appFile, config.Docker.Dockerfile)
-	runCmdArgs := getRunCmdArgs(&config, &containerLabel, []string{})
+	runCmdArgs := getRunCmdArgs(&config, &containerLabel, &appFile, []string{})
 
 	fmt.Println("\"docker run\" is called with the following arguments:\n" + strings.Join(runCmdArgs, " "))
 }
@@ -94,22 +94,39 @@ func Run(args []string) {
 		}
 	}
 
-	dockerClient := newDockerClient(containerLabel)
+	dockerClient := newDockerClient(containerLabel, &appFile)
 	if !found {
 		dockerClient.build(&config.Docker.Dockerfile)
 	}
 
-	runCmdArgs := getRunCmdArgs(&config, &containerLabel, args)
+	runCmdArgs := getRunCmdArgs(&config, &containerLabel, &appFile, args)
 
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	checkErr(err)
+	found = false
+	for _, container := range containers {
+		for _, name := range container.Names {
+			if name == "/"+containerLabel {
+				cli.ContainerRemove(context.Background(), containerLabel, types.ContainerRemoveOptions{Force: true})
+				continue
+			}
+		}
+	}
 	dockerClient.run(&runCmdArgs)
 }
 
-func getRunCmdArgs(config *yamlSpec, containerLabel *string, args []string) []string {
+func getRunCmdArgs(config *yamlSpec, containerLabel *string, appFile *string, args []string) []string {
 
-	runCmdArgs := []string{}
+	absAppFile, err := filepath.Abs(*appFile)
+	checkErr(err)
 
-	runArgs := config.Docker.RunArgs
-	runCmdArgs = append(runCmdArgs, runArgs...)
+	runCmdArgs := []string{
+		"--rm",
+		"--name", *containerLabel,
+		"--label", "appFile=" + absAppFile,
+	}
+
+	runCmdArgs = append(runCmdArgs, config.Docker.RunArgs...)
 	runCmdArgs = append(runCmdArgs, *containerLabel)
 	if len(args) > 1 {
 		runCmdArgs = append(runCmdArgs, args[1:]...)

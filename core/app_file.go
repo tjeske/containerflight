@@ -140,8 +140,9 @@ func getAppConfig(env *environment) yamlSpec {
 			delete(defaultDockerArgs, arg)
 		}
 	}
-
-	appFile.Docker.RunArgs = append([]string{"-v", "${PWD}:${PWD}"}, appFile.Docker.RunArgs...)
+	appFile.Docker.RunArgs = append([]string{
+		"-v", "${PWD}:${PWD}"},
+		appFile.Docker.RunArgs...)
 
 	if appFile.Console {
 		fi, _ := os.Stdin.Stat()

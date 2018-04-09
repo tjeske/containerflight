@@ -47,12 +47,17 @@ func getDockerContainerLabel(appConfigFileName string, dockerFile string) string
 // abstracts the Container Flight communication with a moby daemon
 type dockerClient struct {
 	containerLabel string
+	absAppFile     string
 }
 
 // create a new Docker client using API 1.25 (implemented by Docker 1.13)
-func newDockerClient(containerLabel string) *dockerClient {
+func newDockerClient(containerLabel string, appFile *string) *dockerClient {
 	os.Setenv("DOCKER_API_VERSION", "1.25")
-	return &dockerClient{containerLabel: containerLabel}
+
+	absAppFile, err := filepath.Abs(*appFile)
+	checkErr(err)
+
+	return &dockerClient{containerLabel: containerLabel, absAppFile: absAppFile}
 }
 
 // build a Docker container
@@ -66,7 +71,11 @@ func (dockerClient *dockerClient) build(dockerfileContent *string) {
 	err := dockerCli.Initialize(opts)
 	checkErr(err)
 
-	buildCmd := []string{"-", "-t", dockerClient.containerLabel}
+	buildCmd := []string{
+		"-",
+		"--label", "appFile=" + dockerClient.absAppFile,
+		"-t", dockerClient.containerLabel,
+	}
 
 	cmdDockerRun := cmd_build.NewBuildCommand(dockerCli)
 	cmdDockerRun.SetArgs(buildCmd)
@@ -80,7 +89,7 @@ func (dockerClient *dockerClient) build(dockerfileContent *string) {
 }
 
 // run a Docker container
-func (dockerClient *dockerClient) run(runCmd *[]string) {
+func (dockerClient *dockerClient) run(dockerRunArgs *[]string) {
 	stdin, stdout, stderr := term.StdStreams()
 	dockerCli := command.NewDockerCli(stdin, stdout, stderr)
 
@@ -89,11 +98,11 @@ func (dockerClient *dockerClient) run(runCmd *[]string) {
 	checkErr(err)
 
 	cmdDockerRun := cmd_container.NewRunCommand(dockerCli)
-	cmdDockerRun.SetArgs(*runCmd)
+	cmdDockerRun.SetArgs(*dockerRunArgs)
 	cmdDockerRun.SilenceErrors = true
 	cmdDockerRun.SilenceUsage = true
 
-	log.Debug("execute \"docker run " + strings.Join(*runCmd, " ") + "\"")
+	log.Debug("execute \"docker run " + strings.Join(*dockerRunArgs, " ") + "\"")
 
 	err = cmdDockerRun.Execute()
 	checkErr(err)
