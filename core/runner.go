@@ -38,8 +38,8 @@ func getProcessedAppConfig(appFile string) yamlSpec {
 	config := getAppConfig(env)
 
 	// check version
-	if config.Version != "" {
-		parsedRange, err := semver.ParseRange(config.Version)
+	if config.Compatibility != "" {
+		parsedRange, err := semver.ParseRange(config.Compatibility)
 		checkErrMsg(err, "Version information must match semver 2.0.0 (https://semver.org/)!")
 		if !parsedRange(ContainerFlightVersion()) {
 			log.Fatal("App file is not compatible with current Container Flight version " + ContainerFlightVersion().String() + "!")

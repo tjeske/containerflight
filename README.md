@@ -1,10 +1,10 @@
 [![Build Status](https://travis-ci.org/tjeske/containerflight.svg)](https://travis-ci.org/tjeske/containerflight)
 
-
 # What is Container Flight?
 
 Container Flight allows you to run arbitrary Linux applications in a containerized, **isolated** environment in which the current user context is considered. The application is started like any other program on your computer by just typing its name on the console and pressing enter. A single yaml file is enough to **describe** the application and its environment, dependencies etc. Container Flight is based on [Docker](https://www.docker.com/).
 
+*Container Flight is EXPERIMENTAL and API changes are possible!*
 
 # Why Container Flight?
 
@@ -38,7 +38,7 @@ Second, write an app yaml file for your application. At the moment, only Docker 
 Example for an app file:
 ```
 #!/usr/local/bin/containerflight run  # <- this should point to the Container Flight executable
-version: ">=0.1.0 <1.0.0"
+compatibility: ">=0.1.0 <1.0.0"
 
 docker:
     dockerfile: |
@@ -107,9 +107,9 @@ Container Flight versions follow the [Semantic Versioning](https://semver.org/) 
 - MINOR version increase adds functionality in a backwards-compatible manner
 - PATCH version increase makes backwards-compatible bug fixes
 
-Upcoming versions of Container Flight are always compatible until the MAJOR version won't be changed. If you are using Container Flight 0.1.0 you can express compatibility with higher version of the Container Flight runtime by 
+Major version zero (0.y.z) is for initial development. Anything may change at any time. Upcoming versions >= 1.0.0 of Container Flight are always compatible until the MAJOR version won't be changed. If you are using Container Flight 1.1.0 you can express compatibility with higher version of the Container Flight runtime by 
 ```
-version: ">=0.1.0 <1.0.0"
+compatibility: ">=1.1.0 <2.0.0"
 ```
 Please have a look at [https://github.com/blang/semver](https://github.com/blang/semver) to describe more complex version ranges.
 
