@@ -101,17 +101,19 @@ func Run(args []string) {
 
 	runCmdArgs := getRunCmdArgs(&config, &containerLabel, &appFile, args)
 
-	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
-	checkErr(err)
-	found = false
-	for _, container := range containers {
-		for _, name := range container.Names {
-			if name == "/"+containerLabel {
-				cli.ContainerRemove(context.Background(), containerLabel, types.ContainerRemoveOptions{Force: true})
-				continue
-			}
-		}
-	}
+	// don't try to remove container to speed-up start-up
+	// containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	// checkErr(err)
+	// found = false
+	// for _, container := range containers {
+	// 	for key, value := range container.Labels {
+	// 		if key == "image" && value == containerLabel {
+	// 			cli.ContainerRemove(context.Background(), containerLabel, types.ContainerRemoveOptions{Force: true})
+	// 			continue
+	// 		}
+	// 	}
+	// }
+
 	dockerClient.run(&runCmdArgs)
 }
 
@@ -122,7 +124,7 @@ func getRunCmdArgs(config *yamlSpec, containerLabel *string, appFile *string, ar
 
 	runCmdArgs := []string{
 		"--rm",
-		"--name", *containerLabel,
+		"--label", "image=" + *containerLabel,
 		"--label", "appFile=" + absAppFile,
 	}
 
