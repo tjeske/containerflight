@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/tjeske/containerflight.svg)](https://travis-ci.org/tjeske/containerflight)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tjeske/containerflight)](https://goreportcard.com/report/github.com/tjeske/containerflight)
 
 # What is Container Flight?
 
