@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package appconfig
 
 import (
 	"os"
 	"os/user"
 	"path/filepath"
+
+	"github.com/tjeske/containerflight/util"
 )
 
 type environment struct {
@@ -36,13 +38,13 @@ func getEnv(appFile string) *environment {
 
 	// current user
 	currentUser, err := user.Current()
-	checkErr(err)
+	util.CheckErr(err)
 
 	groupName, err := user.LookupGroupId(currentUser.Gid)
-	checkErr(err)
+	util.CheckErr(err)
 
 	workingDir, err := os.Getwd()
-	checkErr(err)
+	util.CheckErr(err)
 
 	// create environment object
 	var env = environment{

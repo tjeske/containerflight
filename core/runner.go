@@ -21,48 +21,31 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/tjeske/containerflight/appconfig"
+	"github.com/tjeske/containerflight/util"
 
-	"github.com/blang/semver"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 )
 
-// load an app file, process it and return its content as a struct
-func getProcessedAppConfig(appFile string) yamlSpec {
-	absAppFile, err := filepath.Abs(appFile)
-	checkErr(err)
-
-	env := getEnv(absAppFile)
-
-	config := getAppConfig(env)
-
-	// check version
-	if config.Compatibility != "" {
-		parsedRange, err := semver.ParseRange(config.Compatibility)
-		checkErrMsg(err, "Version information must match semver 2.0.0 (https://semver.org/)!")
-		if !parsedRange(ContainerFlightVersion()) {
-			log.Fatal("App file is not compatible with current Container Flight version " + ContainerFlightVersion().String() + "!")
-		}
-	}
-
-	return config
-}
-
 // PrintDockerfile loads an app file and dump the processed dockerfile
-func PrintDockerfile(appFile string) {
+func PrintDockerfile(yamlAppFileName string) {
 
-	config := getProcessedAppConfig(appFile)
+	appConfig := appconfig.NewAppConfig(&yamlAppFileName, ContainerFlightVersion())
+	dockerfile := appConfig.GetDockerfile()
 
-	fmt.Println(config.Docker.Dockerfile)
+	fmt.Println(dockerfile)
 }
 
 // PrintDockerRunArgs show the resulting "docker run" arguments
-func PrintDockerRunArgs(appFile string) {
+func PrintDockerRunArgs(yamlAppFileName string) {
 
-	config := getProcessedAppConfig(appFile)
-	containerLabel := getDockerContainerLabel(appFile, config.Docker.Dockerfile)
-	runCmdArgs := getRunCmdArgs(&config, &containerLabel, &appFile, []string{})
+	appConfig := appconfig.NewAppConfig(&yamlAppFileName, ContainerFlightVersion())
+	dockerfile := appConfig.GetDockerfile()
+	dockerRunArgs := appConfig.GetDockerRunArgs()
+
+	containerLabel := getDockerContainerLabel(yamlAppFileName, dockerfile)
+	runCmdArgs := getRunCmdArgs(dockerRunArgs, &containerLabel, &yamlAppFileName, []string{})
 
 	fmt.Println("\"docker run\" is called with the following arguments:\n" + strings.Join(runCmdArgs, " "))
 }
@@ -71,18 +54,20 @@ func PrintDockerRunArgs(appFile string) {
 // If the container does not exists it is built upfront.
 func Run(args []string) {
 
-	appFile := args[0]
+	yamlAppFileName := args[0]
 
-	config := getProcessedAppConfig(appFile)
+	appConfig := appconfig.NewAppConfig(&yamlAppFileName, ContainerFlightVersion())
+	dockerfile := appConfig.GetDockerfile()
+	dockerRunArgs := appConfig.GetDockerRunArgs()
 
 	var httpClient *http.Client
 	cli, err := client.NewClient(client.DefaultDockerHost, "1.30", httpClient, nil)
-	checkErr(err)
+	util.CheckErr(err)
 
 	images, err := cli.ImageList(context.Background(), types.ImageListOptions{})
-	checkErr(err)
+	util.CheckErr(err)
 
-	containerLabel := getDockerContainerLabel(appFile, config.Docker.Dockerfile)
+	containerLabel := getDockerContainerLabel(yamlAppFileName, dockerfile)
 	fullContainerLabel := containerLabel + ":latest"
 
 	found := false
@@ -94,12 +79,12 @@ func Run(args []string) {
 		}
 	}
 
-	dockerClient := newDockerClient(containerLabel, &appFile)
+	dockerClient := newDockerClient(containerLabel, &yamlAppFileName)
 	if !found {
-		dockerClient.build(&config.Docker.Dockerfile)
+		dockerClient.build(&dockerfile)
 	}
 
-	runCmdArgs := getRunCmdArgs(&config, &containerLabel, &appFile, args)
+	runCmdArgs := getRunCmdArgs(dockerRunArgs, &containerLabel, &yamlAppFileName, args)
 
 	// don't try to remove container to speed-up start-up
 	// containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
@@ -117,10 +102,10 @@ func Run(args []string) {
 	dockerClient.run(&runCmdArgs)
 }
 
-func getRunCmdArgs(config *yamlSpec, containerLabel *string, appFile *string, args []string) []string {
+func getRunCmdArgs(dockerRunArgs []string, containerLabel *string, appFile *string, args []string) []string {
 
 	absAppFile, err := filepath.Abs(*appFile)
-	checkErr(err)
+	util.CheckErr(err)
 
 	runCmdArgs := []string{
 		"--rm",
@@ -128,7 +113,7 @@ func getRunCmdArgs(config *yamlSpec, containerLabel *string, appFile *string, ar
 		"--label", "appFile=" + absAppFile,
 	}
 
-	runCmdArgs = append(runCmdArgs, config.Docker.RunArgs...)
+	runCmdArgs = append(runCmdArgs, dockerRunArgs...)
 	runCmdArgs = append(runCmdArgs, *containerLabel)
 	if len(args) > 1 {
 		runCmdArgs = append(runCmdArgs, args[1:]...)

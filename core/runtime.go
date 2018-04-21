@@ -13,17 +13,3 @@
 // limitations under the License.
 
 package core
-
-import (
-	"github.com/blang/semver"
-	"github.com/tjeske/containerflight/util"
-)
-
-var versionStr = "0.2.0-snapshot"
-
-// ContainerFlightVersion returns the current Container Flight version
-func ContainerFlightVersion() semver.Version {
-	containerFlightVersion, err := semver.Make(versionStr)
-	util.CheckErr(err)
-	return containerFlightVersion
-}

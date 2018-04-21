@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package appconfig
 
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/blang/semver"
 	yaml "github.com/go-yaml/yaml"
 	log "github.com/sirupsen/logrus"
+	"github.com/tjeske/containerflight/util"
 )
 
 // specification of an app file
@@ -29,10 +32,70 @@ type yamlSpec struct {
 	Compatibility string
 	Console       bool
 	Gui           bool
-	Docker        struct {
+	Image         struct {
+		Base       string
 		Dockerfile string
-		RunArgs    []string
+		Storage    struct {
+			Driver string
+		}
 	}
+	Runtime struct {
+		Driver string
+		Docker struct {
+			RunArgs []string
+		}
+	}
+}
+
+type appConfig struct {
+	appConfig      yamlSpec
+	env            *environment
+	resolvedParams map[string]string
+}
+
+var parameterRegex = regexp.MustCompile("\\$\\{(.+?)\\}")
+
+func NewAppConfig(yamlAppFileName *string, cfVersion semver.Version) *appConfig {
+
+	absYamlAppFileName, err := filepath.Abs(*yamlAppFileName)
+	util.CheckErr(err)
+
+	env := getEnv(absYamlAppFileName)
+
+	appFile := getAppFile(env)
+
+	// check version
+	if appFile.Compatibility != "" {
+		parsedRange, err := semver.ParseRange(appFile.Compatibility)
+		util.CheckErrMsg(err, "Version information must match semver 2.0.0 (https://semver.org/)!")
+		if !parsedRange(cfVersion) {
+			log.Fatal("App file is not compatible with current Container Flight version " + cfVersion.String() + "!")
+		}
+	}
+
+	resolvedParams := getResolvedParameters(env)
+
+	return &appConfig{
+		appConfig:      appFile,
+		env:            env,
+		resolvedParams: resolvedParams,
+	}
+}
+
+// read and parse app config file
+func getAppFile(env *environment) yamlSpec {
+
+	// read the app file
+	yamlFileBytes, err := ioutil.ReadFile(env.appFile)
+	util.CheckErr(err)
+	str := string(yamlFileBytes)
+
+	// unmarshal yaml file
+	appFile := yamlSpec{}
+	err = yaml.UnmarshalStrict([]byte(str), &appFile)
+	util.CheckErr(err)
+
+	return appFile
 }
 
 // map the parameters which can be used in an app file to their corresponding values
@@ -71,11 +134,8 @@ func getResolvedParameters(env *environment) map[string]string {
 	}
 }
 
-var parameterRegex = regexp.MustCompile("\\$\\{(.+?)\\}")
-var setProxyRegex = regexp.MustCompile("(^.*FROM.*?\n)")
-
 // search and replace parameters in string
-func replaceParameters(str *string, resolvedParams *map[string]string) {
+func (cfg *appConfig) replaceParameters(str *string) {
 	oldYamlFileStr := ""
 	for *str != oldYamlFileStr {
 		oldYamlFileStr = *str
@@ -83,7 +143,7 @@ func replaceParameters(str *string, resolvedParams *map[string]string) {
 			trimmedMatch := match[2 : len(match)-1]
 			split := strings.Split(trimmedMatch, ":")
 			if len(split) == 1 {
-				if value, ok := (*resolvedParams)[split[0]]; ok {
+				if value, ok := cfg.resolvedParams[split[0]]; ok {
 					// ${KEY}
 					return value
 				}
@@ -112,50 +172,46 @@ func replaceParameters(str *string, resolvedParams *map[string]string) {
 	}
 }
 
-// read and parse app config file
-func getAppConfig(env *environment) yamlSpec {
+func (cfg *appConfig) GetDockerfile() (dockerfile string) {
+	re := regexp.MustCompile("^docker://")
+	dockerfile = re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ") + "\n\n"
 
-	// read the app file
-	yamlFileBytes, err := ioutil.ReadFile(env.appFile)
-	checkErr(err)
-	str := string(yamlFileBytes)
+	dockerfile += cfg.resolvedParams["SET_PROXY"] + "\n" + cfg.appConfig.Image.Dockerfile + "\n" + cfg.resolvedParams["USER_CTX"]
 
-	// unmarshal yaml file
-	appFile := yamlSpec{}
-	err = yaml.UnmarshalStrict([]byte(str), &appFile)
-	checkErr(err)
+	// replace parameters
+	cfg.replaceParameters(&dockerfile)
 
-	resolvedParams := getResolvedParameters(env)
+	log.Debug("dockerfile: %v", dockerfile)
 
-	replacedStr := "${1}" + "\n" + resolvedParams["SET_PROXY"]
-	appFile.Docker.Dockerfile = setProxyRegex.ReplaceAllString(appFile.Docker.Dockerfile, replacedStr)
-	appFile.Docker.Dockerfile += "\n" + resolvedParams["USER_CTX"]
+	return dockerfile
+}
 
+func (cfg *appConfig) GetDockerRunArgs() (dockerRunArgs []string) {
 	defaultDockerArgs := map[string]string{
 		"-h": "flybydocker",
 		"-w": "${PWD}",
 	}
-	for _, arg := range appFile.Docker.RunArgs {
+	for _, arg := range cfg.appConfig.Runtime.Docker.RunArgs {
 		if _, ok := defaultDockerArgs[arg]; ok {
 			delete(defaultDockerArgs, arg)
 		}
 	}
-	appFile.Docker.RunArgs = append([]string{
+	dockerRunArgs = append([]string{
 		"-v", "${PWD}:${PWD}"},
-		appFile.Docker.RunArgs...)
+		cfg.appConfig.Runtime.Docker.RunArgs...)
 
-	if appFile.Console {
+	if cfg.appConfig.Console {
 		fi, _ := os.Stdin.Stat()
 		if (fi.Mode() & os.ModeCharDevice) == 0 {
 			// input from pipe
-			appFile.Docker.RunArgs = append(appFile.Docker.RunArgs, "-i")
+			dockerRunArgs = append(dockerRunArgs, "-i")
 		} else {
-			appFile.Docker.RunArgs = append(appFile.Docker.RunArgs, "-ti")
+			dockerRunArgs = append(dockerRunArgs, "-ti")
 		}
 	}
 
-	if appFile.Gui {
-		appFile.Docker.RunArgs = append(appFile.Docker.RunArgs,
+	if cfg.appConfig.Gui {
+		dockerRunArgs = append(dockerRunArgs,
 			"-e", "DISPLAY="+os.Getenv("DISPLAY"),
 			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
 		)
@@ -163,16 +219,15 @@ func getAppConfig(env *environment) yamlSpec {
 
 	// take default values of unset Docker arguments
 	for key, value := range defaultDockerArgs {
-		appFile.Docker.RunArgs = append(appFile.Docker.RunArgs, key, value)
+		dockerRunArgs = append(dockerRunArgs, key, value)
 	}
 
 	// replace parameters
-	replaceParameters(&appFile.Docker.Dockerfile, &resolvedParams)
-	for i := range appFile.Docker.RunArgs {
-		replaceParameters(&appFile.Docker.RunArgs[i], &resolvedParams)
+	for i := range dockerRunArgs {
+		cfg.replaceParameters(&dockerRunArgs[i])
 	}
 
-	log.Debug("appFile: %v", appFile)
+	log.Debug("dockerRunArgs: %v", dockerRunArgs)
 
-	return appFile
+	return dockerRunArgs
 }

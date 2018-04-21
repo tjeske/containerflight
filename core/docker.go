@@ -26,6 +26,7 @@ import (
 	cmd_build "github.com/docker/cli/cli/command/image"
 	cliflags "github.com/docker/cli/cli/flags"
 	log "github.com/sirupsen/logrus"
+	"github.com/tjeske/containerflight/util"
 
 	"github.com/docker/cli/cli/command"
 	"github.com/docker/docker/pkg/term"
@@ -55,7 +56,7 @@ func newDockerClient(containerLabel string, appFile *string) *dockerClient {
 	os.Setenv("DOCKER_API_VERSION", "1.25")
 
 	absAppFile, err := filepath.Abs(*appFile)
-	checkErr(err)
+	util.CheckErr(err)
 
 	return &dockerClient{containerLabel: containerLabel, absAppFile: absAppFile}
 }
@@ -69,7 +70,7 @@ func (dockerClient *dockerClient) build(dockerfileContent *string) {
 
 	opts := cliflags.NewClientOptions()
 	err := dockerCli.Initialize(opts)
-	checkErr(err)
+	util.CheckErr(err)
 
 	buildCmd := []string{
 		"-",
@@ -85,7 +86,7 @@ func (dockerClient *dockerClient) build(dockerfileContent *string) {
 	log.Debug("execute \"docker build " + strings.Join(buildCmd, " ") + "\"")
 
 	err = cmdDockerRun.Execute()
-	checkErr(err)
+	util.CheckErr(err)
 }
 
 // run a Docker container
@@ -95,7 +96,7 @@ func (dockerClient *dockerClient) run(dockerRunArgs *[]string) {
 
 	opts := cliflags.NewClientOptions()
 	err := dockerCli.Initialize(opts)
-	checkErr(err)
+	util.CheckErr(err)
 
 	cmdDockerRun := cmd_container.NewRunCommand(dockerCli)
 	cmdDockerRun.SetArgs(*dockerRunArgs)
@@ -105,5 +106,5 @@ func (dockerClient *dockerClient) run(dockerRunArgs *[]string) {
 	log.Debug("execute \"docker run " + strings.Join(*dockerRunArgs, " ") + "\"")
 
 	err = cmdDockerRun.Execute()
-	checkErr(err)
+	util.CheckErr(err)
 }

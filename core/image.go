@@ -13,19 +13,3 @@
 // limitations under the License.
 
 package core
-
-import (
-	log "github.com/sirupsen/logrus"
-)
-
-func checkErr(err error) {
-	if err != nil {
-		log.Fatal("ERROR: ", err)
-	}
-}
-
-func checkErrMsg(err error, msg string) {
-	if err != nil {
-		log.Fatal("ERROR: ", msg+" ("+err.Error()+")")
-	}
-}

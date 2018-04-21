@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package util
 
 import (
-	"github.com/blang/semver"
-	"github.com/tjeske/containerflight/util"
+	log "github.com/sirupsen/logrus"
 )
 
-var versionStr = "0.2.0-snapshot"
+func CheckErr(err error) {
+	if err != nil {
+		log.Fatal("ERROR: ", err)
+	}
+}
 
-// ContainerFlightVersion returns the current Container Flight version
-func ContainerFlightVersion() semver.Version {
-	containerFlightVersion, err := semver.Make(versionStr)
-	util.CheckErr(err)
-	return containerFlightVersion
+func CheckErrMsg(err error, msg string) {
+	if err != nil {
+		log.Fatal("ERROR: ", msg+" ("+err.Error()+")")
+	}
 }
