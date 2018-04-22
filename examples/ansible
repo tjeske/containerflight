@@ -1,36 +1,19 @@
 #!/usr/local/bin/containerflight run
-version: 0.x
+compatibility: ">=0.2.0-snapshot <1.0.0"
 
-docker:
+console: true
+
+image:
+    base: docker://ubuntu:16.04
     dockerfile: |
-        FROM ubuntu:16.04
-
-        ENV http_proxy=${ENV:http_proxy}
-        ENV https_proxy=${ENV:https_proxy}
-
-        RUN apt-get update && \
-            export DEBIAN_FRONTEND=noninteractive && \
-            apt-get install -y curl python python-pip && \
-            rm -rf /var/lib/apt/lists/*
+        ${APT_INSTALL: curl, python, python-pip}
 
         # install Ansible and docker compose
-        RUN pip install ansible==2.4.2.0 docker-compose==1.18.0
+        RUN pip install ansible==2.4.4.0 docker-compose==1.18.0
 
         # install docker binaries
         RUN mkdir -p /opt && \
             curl "https://download.docker.com/linux/static/stable/x86_64/docker-17.12.0-ce.tgz" \
             | tar -xzC /usr/local/bin/
 
-        # set-up the host user/group environment 
-        RUN set -x ; \
-            groupadd -g ${GROUPID} ${GROUPNAME} ; \
-            adduser --uid ${USERID} --gid ${USERID} ${USERNAME} && exit 0 ; exit 1
-
-        USER ${USERNAME}
-
         CMD [ "/bin/bash" ]
-
-    runargs: [
-        "-v", "${PWD}:${PWD}",
-		"-w", "${PWD}"
-    ]

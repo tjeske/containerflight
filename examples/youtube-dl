@@ -1,34 +1,14 @@
 #!/usr/local/bin/containerflight run
-version: 0.x
+compatibility: ">=0.2.0-snapshot <1.0.0"
 
-docker:
+console: true
+
+image:
+    base: docker://ubuntu:18.04
     dockerfile: |
-        FROM ubuntu:18.04
-
-        ENV http_proxy=${ENV:http_proxy}
-        ENV https_proxy=${ENV:https_proxy}
-
-        RUN apt-get update && \
-            export DEBIAN_FRONTEND=noninteractive && \
-            apt-get install -y libav-tools python python-pip && \
-            rm -rf /var/lib/apt/lists/*
+        ${APT_INSTALL: libav-tools, python, python-pip}
 
         # install Ansible and docker compose
         RUN pip install --upgrade youtube_dl
 
-        # set-up the host user/group environment 
-        RUN set -x ; \
-            groupadd -g ${GROUPID} ${GROUPNAME} ; \
-            adduser --uid ${USERID} --gid ${USERID} ${USERNAME} && exit 0 ; exit 1
-
-        USER ${USERNAME}
-
         ENTRYPOINT [ "/usr/local/bin/youtube-dl" ]
-
-    runargs: [
-        "-it",
-        "-a", "stdin",
-        "-a", "stdout",
-        "-v", "${PWD}:${PWD}",
-		"-w", "${PWD}"
-    ]

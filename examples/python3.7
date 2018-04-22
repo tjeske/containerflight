@@ -1,27 +1,9 @@
 #!/usr/local/bin/containerflight run
-version: ">=0.1.0 <1.0.0"
+compatibility: ">=0.2.0-snapshot <1.0.0"
 
-docker:
+console: true
+
+image:
+    base: docker://python:3.7.0b2-alpine
     dockerfile: |
-        FROM python:3.7.0b2-alpine
-
-        ENV http_proxy=${ENV:http_proxy}
-        ENV https_proxy=${ENV:https_proxy}
-
-        # set-up the host user/group environment 
-        RUN set -x ; \
-            addgroup -g ${GROUPID} -S ${GROUPNAME} ; \
-            adduser -u ${USERID} -D -S -G ${GROUPNAME} ${USERNAME} && exit 0 ; exit 1
-
-        USER ${USERNAME}
-
         ENTRYPOINT [ "python" ]
-
-    runargs: [
-        "-ti",
-        "--rm",
-        "-a", "stdin",
-        "-a", "stdout",
-        "-v", "${PWD}:${PWD}",
-        "-w", "${PWD}"
-    ] 
