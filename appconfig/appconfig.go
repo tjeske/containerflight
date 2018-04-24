@@ -47,7 +47,8 @@ type yamlSpec struct {
 	}
 }
 
-type appConfig struct {
+// AppConfig represents an application config file
+type AppConfig struct {
 	appConfig      yamlSpec
 	env            *environment
 	resolvedParams map[string]string
@@ -55,7 +56,8 @@ type appConfig struct {
 
 var parameterRegex = regexp.MustCompile("\\$\\{(.+?)\\}")
 
-func NewAppConfig(yamlAppFileName *string, cfVersion semver.Version) *appConfig {
+// NewAppConfig returns a representation of an application config file
+func NewAppConfig(yamlAppFileName *string, cfVersion semver.Version) *AppConfig {
 
 	absYamlAppFileName, err := filepath.Abs(*yamlAppFileName)
 	util.CheckErr(err)
@@ -75,7 +77,7 @@ func NewAppConfig(yamlAppFileName *string, cfVersion semver.Version) *appConfig 
 
 	resolvedParams := getResolvedParameters(env)
 
-	return &appConfig{
+	return &AppConfig{
 		appConfig:      appFile,
 		env:            env,
 		resolvedParams: resolvedParams,
@@ -135,7 +137,7 @@ func getResolvedParameters(env *environment) map[string]string {
 }
 
 // search and replace parameters in string
-func (cfg *appConfig) replaceParameters(str *string) {
+func (cfg *AppConfig) replaceParameters(str *string) {
 	oldYamlFileStr := ""
 	for *str != oldYamlFileStr {
 		oldYamlFileStr = *str
@@ -172,11 +174,14 @@ func (cfg *appConfig) replaceParameters(str *string) {
 	}
 }
 
-func (cfg *appConfig) GetDockerfile() (dockerfile string) {
+// GetDockerfile returns for an application file the resolved dockerfile
+func (cfg *AppConfig) GetDockerfile() (dockerfile string) {
 	re := regexp.MustCompile("^docker://")
 	dockerfile = re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ") + "\n\n"
 
-	dockerfile += cfg.resolvedParams["SET_PROXY"] + "\n" + cfg.appConfig.Image.Dockerfile + "\n" + cfg.resolvedParams["USER_CTX"]
+	dockerfile += cfg.resolvedParams["SET_PROXY"] + "\n" +
+		cfg.appConfig.Image.Dockerfile + "\n" +
+		cfg.resolvedParams["USER_CTX"]
 
 	// replace parameters
 	cfg.replaceParameters(&dockerfile)
@@ -186,7 +191,8 @@ func (cfg *appConfig) GetDockerfile() (dockerfile string) {
 	return dockerfile
 }
 
-func (cfg *appConfig) GetDockerRunArgs() (dockerRunArgs []string) {
+// GetDockerRunArgs returns for an application file the resolved docker run arguments
+func (cfg *AppConfig) GetDockerRunArgs() (dockerRunArgs []string) {
 	defaultDockerArgs := map[string]string{
 		"-h": "flybydocker",
 		"-w": "${PWD}",
