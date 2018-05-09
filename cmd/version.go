@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/tjeske/containerflight/core"
+	"github.com/tjeske/containerflight/version"
 )
 
 // versionCmd shows the version of containerflight
@@ -27,7 +27,7 @@ var versionCmd = &cobra.Command{
 	Short: "Show version",
 	Long:  `Show version`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(core.ContainerFlightVersion().String())
+		fmt.Println(version.ContainerFlightVersion().String())
 	},
 }
 

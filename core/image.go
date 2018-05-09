@@ -13,3 +13,18 @@
 // limitations under the License.
 
 package core
+
+import (
+	"fmt"
+
+	"github.com/tjeske/containerflight/appconfig"
+)
+
+// PrintDockerfile loads an app file and dump the processed dockerfile
+func PrintDockerfile(yamlAppConfigFileName string) {
+
+	appInfo := appconfig.NewAppInfo(yamlAppConfigFileName)
+	dockerfile := appInfo.GetDockerfile()
+
+	fmt.Println(dockerfile)
+}

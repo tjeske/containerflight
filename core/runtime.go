@@ -13,3 +13,89 @@
 // limitations under the License.
 
 package core
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"path/filepath"
+	"strings"
+
+	"github.com/tjeske/containerflight/appconfig"
+	"github.com/tjeske/containerflight/util"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+)
+
+// PrintDockerRunArgs show the resulting "docker run" arguments
+func PrintDockerRunArgs(yamlAppConfigFileName string) {
+
+	appInfo := appconfig.NewAppInfo(yamlAppConfigFileName)
+	dockerfile := appInfo.GetDockerfile()
+	dockerRunArgs := appInfo.GetDockerRunArgs()
+
+	containerLabel := getDockerContainerLabel(yamlAppConfigFileName, dockerfile)
+	runCmdArgs := getRunCmdArgs(dockerRunArgs, &containerLabel, &yamlAppConfigFileName, []string{})
+
+	fmt.Println("\"docker run\" is called with the following arguments:\n" + strings.Join(runCmdArgs, " "))
+}
+
+// Run starts an app in a container.
+// If the container does not exists it is built upfront.
+func Run(args []string) {
+
+	yamlAppConfigFileName := args[0]
+
+	appInfo := appconfig.NewAppInfo(yamlAppConfigFileName)
+	dockerfile := appInfo.GetDockerfile()
+	dockerRunArgs := appInfo.GetDockerRunArgs()
+
+	var httpClient *http.Client
+	cli, err := client.NewClient(client.DefaultDockerHost, "1.30", httpClient, nil)
+	util.CheckErr(err)
+
+	images, err := cli.ImageList(context.Background(), types.ImageListOptions{})
+	util.CheckErr(err)
+
+	containerLabel := getDockerContainerLabel(yamlAppConfigFileName, dockerfile)
+	fullContainerLabel := containerLabel + ":latest"
+
+	found := false
+	for _, image := range images {
+		for _, repoTag := range image.RepoTags {
+			if repoTag == fullContainerLabel {
+				found = true
+			}
+		}
+	}
+
+	dockerClient := newDockerClient(containerLabel, &yamlAppConfigFileName)
+	if !found {
+		dockerClient.build(&dockerfile)
+	}
+
+	runCmdArgs := getRunCmdArgs(dockerRunArgs, &containerLabel, &yamlAppConfigFileName, args)
+
+	dockerClient.run(&runCmdArgs)
+}
+
+func getRunCmdArgs(dockerRunArgs []string, containerLabel *string, appFile *string, args []string) []string {
+
+	absAppFile, err := filepath.Abs(*appFile)
+	util.CheckErr(err)
+
+	runCmdArgs := []string{
+		"--rm",
+		"--label", "image=" + *containerLabel,
+		"--label", "appFile=" + absAppFile,
+	}
+
+	runCmdArgs = append(runCmdArgs, dockerRunArgs...)
+	runCmdArgs = append(runCmdArgs, *containerLabel)
+	if len(args) > 1 {
+		runCmdArgs = append(runCmdArgs, args[1:]...)
+	}
+
+	return runCmdArgs
+}

@@ -17,14 +17,11 @@ package appconfig
 import (
 	"os"
 	"os/user"
-	"path/filepath"
 
 	"github.com/tjeske/containerflight/util"
 )
 
 type environment struct {
-	appName    string
-	appFile    string
 	userName   string
 	userID     string
 	groupName  string
@@ -34,7 +31,7 @@ type environment struct {
 }
 
 // Determine the current environment
-func getEnv(appFile string) *environment {
+func getEnv() environment {
 
 	// current user
 	currentUser, err := user.Current()
@@ -48,13 +45,11 @@ func getEnv(appFile string) *environment {
 
 	// create environment object
 	var env = environment{
-		appName:    filepath.Base(appFile),
-		appFile:    appFile,
 		userName:   currentUser.Username,
 		userID:     currentUser.Uid,
 		groupName:  groupName.Name,
 		groupID:    currentUser.Gid,
 		homeDir:    currentUser.HomeDir,
 		workingDir: workingDir}
-	return &env
+	return env
 }

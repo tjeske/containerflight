@@ -15,17 +15,22 @@
 package appconfig
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/blang/semver"
 	yaml "github.com/go-yaml/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/tjeske/containerflight/util"
+	"github.com/tjeske/containerflight/version"
 )
+
+var logFatalf = log.Fatalf
 
 // specification of an app file
 type yamlSpec struct {
@@ -47,61 +52,77 @@ type yamlSpec struct {
 	}
 }
 
-// AppConfig represents an application config file
-type AppConfig struct {
+// AppInfo represents an application config file
+type AppInfo struct {
 	appConfig      yamlSpec
-	env            *environment
+	env            environment
 	resolvedParams map[string]string
 }
 
 var parameterRegex = regexp.MustCompile("\\$\\{(.+?)\\}")
 
-// NewAppConfig returns a representation of an application config file
-func NewAppConfig(yamlAppFileName *string, cfVersion semver.Version) *AppConfig {
+// NewAppInfo returns a representation of an application config file
+func NewAppInfo(yamlAppConfigFileName string) *AppInfo {
 
-	absYamlAppFileName, err := filepath.Abs(*yamlAppFileName)
+	absYamlAppConfigFileName, err := filepath.Abs(yamlAppConfigFileName)
 	util.CheckErr(err)
 
-	env := getEnv(absYamlAppFileName)
+	yamlAppFileReader, err := os.Open(absYamlAppConfigFileName)
+	util.CheckErr(err)
 
-	appFile := getAppFile(env)
+	env := getEnv()
 
-	// check version
-	if appFile.Compatibility != "" {
-		parsedRange, err := semver.ParseRange(appFile.Compatibility)
-		util.CheckErrMsg(err, "Version information must match semver 2.0.0 (https://semver.org/)!")
-		if !parsedRange(cfVersion) {
-			log.Fatal("App file is not compatible with current Container Flight version " + cfVersion.String() + "!")
-		}
-	}
+	appConfig := newAppInfo(yamlAppFileReader, env)
+	return appConfig
+}
+
+// newAppInfo returns a representation of an application config
+// use this function for tests
+func newAppInfo(yamlAppConfigReader io.Reader, env environment) *AppInfo {
+
+	appConfig := getAppConfig(yamlAppConfigReader)
 
 	resolvedParams := getResolvedParameters(env)
 
-	return &AppConfig{
-		appConfig:      appFile,
+	validate(appConfig)
+
+	return &AppInfo{
+		appConfig:      appConfig,
 		env:            env,
 		resolvedParams: resolvedParams,
 	}
 }
 
-// read and parse app config file
-func getAppFile(env *environment) yamlSpec {
+func validate(appConfig yamlSpec) {
+	// check version
+	if appConfig.Compatibility != "" {
+		cfVersion := version.ContainerFlightVersion()
+		parsedRange, err := semver.ParseRange(appConfig.Compatibility)
+		util.CheckErrMsg(err, "Version information must match semver 2.0.0 (https://semver.org/)!")
+		if !parsedRange(cfVersion) {
+			logFatalf("App file is not compatible with current Container Flight version %s!", cfVersion.String())
+		}
+	}
+}
+
+// read and parse app config
+func getAppConfig(yamlAppConfigReader io.Reader) yamlSpec {
 
 	// read the app file
-	yamlFileBytes, err := ioutil.ReadFile(env.appFile)
+	yamlFileBytes, err := ioutil.ReadAll(yamlAppConfigReader)
 	util.CheckErr(err)
 	str := string(yamlFileBytes)
 
 	// unmarshal yaml file
-	appFile := yamlSpec{}
-	err = yaml.UnmarshalStrict([]byte(str), &appFile)
+	appConfig := yamlSpec{}
+	err = yaml.UnmarshalStrict([]byte(str), &appConfig)
 	util.CheckErr(err)
 
-	return appFile
+	return appConfig
 }
 
 // map the parameters which can be used in an app file to their corresponding values
-func getResolvedParameters(env *environment) map[string]string {
+func getResolvedParameters(env environment) map[string]string {
 	return map[string]string{
 		"USERNAME":  env.userName,
 		"USERID":    env.userID,
@@ -136,8 +157,12 @@ func getResolvedParameters(env *environment) map[string]string {
 	}
 }
 
+var getEnvVar = func(name string) string {
+	return os.Getenv(name)
+}
+
 // search and replace parameters in string
-func (cfg *AppConfig) replaceParameters(str *string) {
+func (cfg *AppInfo) replaceParameters(str *string) {
 	oldYamlFileStr := ""
 	for *str != oldYamlFileStr {
 		oldYamlFileStr = *str
@@ -154,7 +179,7 @@ func (cfg *AppConfig) replaceParameters(str *string) {
 				case "ENV":
 					{
 						// ${ENV:...}
-						return os.Getenv(split[1])
+						return getEnvVar(split[1])
 					}
 				case "APT_INSTALL":
 					{
@@ -175,9 +200,12 @@ func (cfg *AppConfig) replaceParameters(str *string) {
 }
 
 // GetDockerfile returns for an application file the resolved dockerfile
-func (cfg *AppConfig) GetDockerfile() (dockerfile string) {
+func (cfg *AppInfo) GetDockerfile() (dockerfile string) {
 	re := regexp.MustCompile("^docker://")
-	dockerfile = re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ") + "\n\n"
+	dockerfile = re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ")
+	if dockerfile != "" {
+		dockerfile += "\n\n"
+	}
 
 	dockerfile += cfg.resolvedParams["SET_PROXY"] + "\n" +
 		cfg.appConfig.Image.Dockerfile + "\n" +
@@ -192,7 +220,7 @@ func (cfg *AppConfig) GetDockerfile() (dockerfile string) {
 }
 
 // GetDockerRunArgs returns for an application file the resolved docker run arguments
-func (cfg *AppConfig) GetDockerRunArgs() (dockerRunArgs []string) {
+func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 	defaultDockerArgs := map[string]string{
 		"-h": "flybydocker",
 		"-w": "${PWD}",
@@ -224,7 +252,13 @@ func (cfg *AppConfig) GetDockerRunArgs() (dockerRunArgs []string) {
 	}
 
 	// take default values of unset Docker arguments
-	for key, value := range defaultDockerArgs {
+	keys := make([]string, 0)
+	for k := range defaultDockerArgs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		value := defaultDockerArgs[key]
 		dockerRunArgs = append(dockerRunArgs, key, value)
 	}
 
