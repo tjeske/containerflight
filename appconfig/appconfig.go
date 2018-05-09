@@ -35,6 +35,8 @@ var logFatalf = log.Fatalf
 // specification of an app file
 type yamlSpec struct {
 	Compatibility string
+	Version       string
+	Description   string
 	Console       bool
 	Gui           bool
 	Image         struct {
