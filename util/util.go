@@ -18,12 +18,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// CheckErr checks for an error
+// use this function after calling an error returning function
 func CheckErr(err error) {
 	if err != nil {
 		log.Fatal("ERROR: ", err)
 	}
 }
 
+// CheckErrMsg checks for an error and prints out a custom error message
+// use this function after calling an error returning function
 func CheckErrMsg(err error, msg string) {
 	if err != nil {
 		log.Fatal("ERROR: ", msg+" ("+err.Error()+")")
