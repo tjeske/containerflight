@@ -248,7 +248,7 @@ func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 
 	if cfg.appConfig.Gui {
 		dockerRunArgs = append(dockerRunArgs,
-			"-e", "DISPLAY="+os.Getenv("DISPLAY"),
+			"-e", "DISPLAY="+getEnvVar("DISPLAY"),
 			"-v", "/tmp/.X11-unix:/tmp/.X11-unix",
 		)
 	}

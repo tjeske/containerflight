@@ -155,7 +155,7 @@ func TestDockerRunArgsGui(t *testing.T) {
 
 	appConfigStr := "gui: true"
 
-	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-e", "DISPLAY=:0", "-v", "/tmp/.X11-unix:/tmp/.X11-unix", "-h", "flybydocker", "-w", "/myworkingdir"}
+	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-e", "DISPLAY=DISPLAY", "-v", "/tmp/.X11-unix:/tmp/.X11-unix", "-h", "flybydocker", "-w", "/myworkingdir"}
 
 	testDockerRunArgs(t, appConfigStr, expDockerRunArgs)
 }
