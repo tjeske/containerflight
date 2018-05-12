@@ -32,6 +32,10 @@
   name = "github.com/blang/semver"
   version = "3.5.1"
 
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.1"
+
 [[override]]
     name = "github.com/docker/cli"
     revision = "v17.12.1-ce"

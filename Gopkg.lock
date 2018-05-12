@@ -43,6 +43,11 @@
   revision = "35d55c5e8dd23b32037d56cf97174aff3efdfa83"
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+
+[[projects]]
   name = "github.com/docker/cli"
   packages = [
     "cli",
@@ -249,6 +254,11 @@
   revision = "839d9e913e063e28dfd0e6c7b7512793e0a48be9"
 
 [[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "v1.0.0"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "v1.0.3"
@@ -262,6 +272,20 @@
   name = "github.com/spf13/pflag"
   packages = ["."]
   revision = "97afa5e7ca8a08a383cb259e06636b5e2cc7897f"
+
+[[projects]]
+  name = "github.com/stretchr/objx"
+  packages = ["."]
+  revision = "facf9a85c22f48d2f52f2380e4efce1768749a89"
+  version = "v0.1"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = [
+    "assert",
+    "mock"
+  ]
+  revision = "4d4bfba8f1d1027c4fdbe371823030df51419987"
 
 [[projects]]
   name = "github.com/theupdateframework/notary"
@@ -395,6 +419,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dbb231dadccd01927e87cf422acda60f0720a1f1945226165ee0749aeae062df"
+  inputs-digest = "550ba7dae2537d897e4fa678578ef8966c0c5279d5ef14b0c424c2ef0d9fe8e5"
   solver-name = "gps-cdcl"
   solver-version = 1
