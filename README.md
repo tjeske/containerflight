@@ -127,7 +127,7 @@ Please have a look at [https://github.com/blang/semver](https://github.com/blang
 # Contributing
 
 1. Fork it
-2. Download your fork to your PC (`git clone https://github.com/your_username/Container Flight && cd Container Flight`)
+2. Download your fork to your PC (`git clone https://github.com/your_username/containerflight && cd containerflight`)
 3. Create your feature branch (`git checkout -b my-new-feature`)
 4. Make changes and add them (`git add .`)
 5. Commit your changes (`git commit -m 'Add some feature'`)
