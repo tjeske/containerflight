@@ -84,12 +84,12 @@ func TestDockerfileApt(t *testing.T) {
 	appConfigStr :=
 		"image:\n" +
 			"    dockerfile: |\n" +
-			"        ${APT_INSTALL: pkg1, pkg2}\n"
+			"        ${APT_INSTALL(pkg1, pkg2)}\n"
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl,
 		"RUN apt-get update && \\\n"+
 			"    export DEBIAN_FRONTEND=noninteractive && \\\n"+
-			"    apt-get install -y pkg1  pkg2 && \\\n"+
+			"    apt-get install -y pkg1 pkg2 && \\\n"+
 			"    rm -rf /var/lib/apt/lists/*\n")
 
 	testDockerfile(t, appConfigStr, expDockerfile)
@@ -100,7 +100,7 @@ func TestDockerfileError(t *testing.T) {
 	appConfigStr :=
 		"image:\n" +
 			"    dockerfile: |\n" +
-			"        ${UNKNOWN KEY}\n"
+			"        ${UNKNOWN_KEY}\n"
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl, "<<ERROR!>>\n")
 

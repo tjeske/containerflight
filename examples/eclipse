@@ -7,7 +7,7 @@ image:
     base: docker://ubuntu:16.04
     dockerfile: |
         # TODO: way too many deps
-        ${APT_INSTALL: bzip2, curl, openjdk-8-jdk, gnome-shell}
+        ${APT_INSTALL(bzip2, curl, openjdk-8-jdk, gnome-shell)}
 
         RUN mkdir -p /opt && \
             curl http://www.mirrorservice.org/sites/download.eclipse.org/eclipseMirror/technology/epp/downloads/release/oxygen/2/eclipse-dsl-oxygen-2-linux-gtk-x86_64.tar.gz \

@@ -6,7 +6,7 @@ console: true
 image:
     base: docker://ubuntu:18.04
     dockerfile: |
-        ${APT_INSTALL: libav-tools, python, python-pip}
+        ${APT_INSTALL(libav-tools, python, python-pip)}
 
         # install Ansible and docker compose
         RUN pip install --upgrade youtube_dl

@@ -6,7 +6,7 @@ gui: true
 image:
     base: docker://ubuntu:18.04
     dockerfile: |
-        ${APT_INSTALL: libcanberra-gtk3-module, gitg}
+        ${APT_INSTALL(libcanberra-gtk3-module, gitg)}
 
         ENTRYPOINT "/usr/bin/gitg" # don't use shell form to handle SIGINT correctly
 

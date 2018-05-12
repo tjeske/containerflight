@@ -4,7 +4,7 @@ compatibility: ">=0.2.0-snapshot <1.0.0"
 image:
     base: docker://ubuntu:16.04
     dockerfile: |
-        ${APT_INSTALL: curl, libperl5.22, wget}
+        ${APT_INSTALL(curl, libperl5.22, wget)}
 
         WORKDIR /tmp
 

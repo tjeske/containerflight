@@ -6,7 +6,7 @@ console: true
 image:
     base: docker://ubuntu:16.04
     dockerfile: |
-        ${APT_INSTALL: curl, python, python-pip}
+        ${APT_INSTALL(curl, python, python-pip)}
 
         # install Ansible and docker compose
         RUN pip install ansible==2.4.4.0 docker-compose==1.18.0

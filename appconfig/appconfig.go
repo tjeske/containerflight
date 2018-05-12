@@ -61,7 +61,8 @@ type AppInfo struct {
 	resolvedParams map[string]string
 }
 
-var parameterRegex = regexp.MustCompile("\\$\\{(.+?)\\}")
+var parameterRegex = regexp.MustCompile("\\$\\{[[:word:]]+(\\(.*?\\))?\\}")
+var parameterSplitRegex = regexp.MustCompile(`(?P<name>[[:word:]]+)(\((?P<args>.+)\))?`)
 
 // NewAppInfo returns a representation of an application config file
 func NewAppInfo(yamlAppConfigFileName string) *AppInfo {
@@ -132,9 +133,9 @@ func getResolvedParameters(env environment) map[string]string {
 		"GROUPID":   env.groupID,
 		"HOME":      env.homeDir,
 		"PWD":       env.workingDir,
-		"SET_PROXY": "ENV http_proxy=${ENV:http_proxy}\n" +
-			"ENV https_proxy=${ENV:https_proxy}\n" +
-			"ENV no_proxy=${ENV:no_proxy}\n",
+		"SET_PROXY": "ENV http_proxy=${ENV(http_proxy)}\n" +
+			"ENV https_proxy=${ENV(https_proxy)}\n" +
+			"ENV no_proxy=${ENV(no_proxy)}\n",
 		"USER_CTX": "RUN if ! getent group ${GROUPNAME} > /dev/null 2>&1; then \\\n" +
 			"        ( \\\n" +
 			"            # ubuntu\\\n" +
@@ -170,27 +171,31 @@ func (cfg *AppInfo) replaceParameters(str *string) {
 		oldYamlFileStr = *str
 		*str = parameterRegex.ReplaceAllStringFunc(*str, func(match string) string {
 			trimmedMatch := match[2 : len(match)-1]
-			split := strings.Split(trimmedMatch, ":")
-			if len(split) == 1 {
+			split := parameterSplitRegex.FindStringSubmatch(trimmedMatch)
+
+			if split[2] == "" {
 				if value, ok := cfg.resolvedParams[split[0]]; ok {
 					// ${KEY}
 					return value
 				}
-			} else if len(split) > 1 {
-				switch split[0] {
+			} else {
+				switch split[1] {
 				case "ENV":
 					{
-						// ${ENV:...}
-						return getEnvVar(split[1])
+						// ${ENV(...)}
+						return getEnvVar(split[3])
 					}
 				case "APT_INSTALL":
 					{
-						// ${APT_INSTALL:...}
-						split := strings.Split(split[1], ",")
+						// ${APT_INSTALL(...)}
+						args := strings.Split(split[3], ",")
+						for i := range args {
+							args[i] = strings.TrimSpace(args[i])
+						}
 						if len(split) >= 1 {
 							return "RUN apt-get update && \\\n" +
 								"    export DEBIAN_FRONTEND=noninteractive && \\\n" +
-								"    apt-get install -y" + strings.Join(split, " ") + " && \\\n" +
+								"    apt-get install -y " + strings.Join(args, " ") + " && \\\n" +
 								"    rm -rf /var/lib/apt/lists/*"
 						}
 					}
