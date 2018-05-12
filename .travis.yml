@@ -9,11 +9,13 @@ matrix:
   allow_failures:
   - go: tip
 before_install:
+- go get github.com/mattn/goveralls
 - go get -u github.com/golang/dep/cmd/dep
 - dep ensure
 script:
 - go build -ldflags '-s'
 - go test ./...
+- $GOPATH/bin/goveralls -service=travis-ci
 deploy:
   provider: releases
   skip_cleanup: true # Important, otherwise the build output would be purged.
