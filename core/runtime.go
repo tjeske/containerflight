@@ -36,9 +36,9 @@ func PrintDockerRunArgs(yamlAppConfigFileName string) {
 	dockerRunArgs := appInfo.GetDockerRunArgs()
 
 	containerLabel := getDockerContainerLabel(yamlAppConfigFileName, dockerfile)
-	runCmdArgs := getRunCmdArgs(dockerRunArgs, &containerLabel, &yamlAppConfigFileName, []string{})
+	dockerRunCmdArgs := getDockerRunCmdArgs(dockerRunArgs, containerLabel, yamlAppConfigFileName, []string{})
 
-	fmt.Println("\"docker run\" is called with the following arguments:\n" + strings.Join(runCmdArgs, " "))
+	fmt.Println("\"docker run\" will be called with the following arguments:\n" + strings.Join(dockerRunCmdArgs, " "))
 }
 
 // Run starts an app in a container.
@@ -75,24 +75,24 @@ func Run(args []string) {
 		dockerClient.build(&dockerfile)
 	}
 
-	runCmdArgs := getRunCmdArgs(dockerRunArgs, &containerLabel, &yamlAppConfigFileName, args)
+	dockerRunCmdArgs := getDockerRunCmdArgs(dockerRunArgs, containerLabel, yamlAppConfigFileName, args)
 
-	dockerClient.run(&runCmdArgs)
+	dockerClient.run(&dockerRunCmdArgs)
 }
 
-func getRunCmdArgs(dockerRunArgs []string, containerLabel *string, appFile *string, args []string) []string {
+func getDockerRunCmdArgs(dockerRunArgs []string, containerLabel string, appFile string, args []string) []string {
 
-	absAppFile, err := filepath.Abs(*appFile)
+	absAppFile, err := filepath.Abs(appFile)
 	util.CheckErr(err)
 
 	runCmdArgs := []string{
 		"--rm",
-		"--label", "image=" + *containerLabel,
+		"--label", "image=" + containerLabel,
 		"--label", "appFile=" + absAppFile,
 	}
 
 	runCmdArgs = append(runCmdArgs, dockerRunArgs...)
-	runCmdArgs = append(runCmdArgs, *containerLabel)
+	runCmdArgs = append(runCmdArgs, containerLabel)
 	if len(args) > 1 {
 		runCmdArgs = append(runCmdArgs, args[1:]...)
 	}
