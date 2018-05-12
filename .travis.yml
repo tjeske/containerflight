@@ -13,6 +13,7 @@ before_install:
 - dep ensure
 script:
 - go build -ldflags '-s'
+- go test ./...
 - "./containerflight"
 deploy:
   provider: releases
