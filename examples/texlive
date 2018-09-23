@@ -1,10 +1,11 @@
 #!/usr/local/bin/containerflight run
 compatibility: ">=0.2.0-snapshot <1.0.0"
+version: 2018
 
 image:
-    base: docker://ubuntu:16.04
+    base: docker://ubuntu:18.04
     dockerfile: |
-        ${APT_INSTALL(curl, libperl5.22, wget)}
+        ${APT_INSTALL(curl, libperl5.26, wget)}
 
         WORKDIR /tmp
 
@@ -16,13 +17,13 @@ image:
         # It will NOT be updated and reflects only the\n\
         # installation profile at installation time.\n\
         selected_scheme scheme-full\n\
-        TEXDIR /usr/local/texlive/2017\n\
-        TEXMFCONFIG ~/.texlive2017/texmf-config\n\
+        TEXDIR /usr/local/texlive/2018\n\
+        TEXMFCONFIG ~/.texlive2018/texmf-config\n\
         TEXMFHOME ~/texmf\n\
         TEXMFLOCAL /usr/local/texlive/texmf-local\n\
-        TEXMFSYSCONFIG /usr/local/texlive/2017/texmf-config\n\
-        TEXMFSYSVAR /usr/local/texlive/2017/texmf-var\n\
-        TEXMFVAR ~/.texlive2017/texmf-var\n\
+        TEXMFSYSCONFIG /usr/local/texlive/2018/texmf-config\n\
+        TEXMFSYSVAR /usr/local/texlive/2018/texmf-var\n\
+        TEXMFVAR ~/.texlive2018/texmf-var\n\
         binary_x86_64-linux 1\n\
         instopt_adjustpath 1\n\
         instopt_adjustrepo 1\n\
