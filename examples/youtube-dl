@@ -8,7 +8,6 @@ image:
     dockerfile: |
         ${APT_INSTALL(ffmpeg, python, python-pip)}
 
-        # install Ansible and docker compose
         RUN pip install --upgrade youtube_dl
 
         ENTRYPOINT [ "/usr/local/bin/youtube-dl" ]
