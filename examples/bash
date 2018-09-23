@@ -1,0 +1,9 @@
+#!/usr/local/bin/containerflight run
+compatibility: ">=0.2.0-snapshot <1.0.0"
+
+console: true
+
+image:
+    base: docker://ubuntu:18.04
+    dockerfile: |
+        ENTRYPOINT [ "/bin/bash" ]
