@@ -74,6 +74,7 @@ func (dockerClient *dockerClient) build(dockerfileContent *string) {
 
 	buildCmd := []string{
 		"-",
+		"--label", "containerflight=true",
 		"--label", "appFile=" + dockerClient.absAppFile,
 		"-t", dockerClient.containerLabel,
 	}
