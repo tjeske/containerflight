@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package appconfig
+package appinfo
 
 import (
 	"io"
@@ -39,7 +39,8 @@ type yamlSpec struct {
 	Description   string
 	Console       bool
 	Gui           bool
-	Image         struct {
+
+	Image struct {
 		Base       string
 		Dockerfile string
 		Storage    struct {
@@ -65,18 +66,18 @@ var parameterRegex = regexp.MustCompile("\\$\\{[[:word:]]+(\\(.*?\\))?\\}")
 var parameterSplitRegex = regexp.MustCompile(`(?P<name>[[:word:]]+)(\((?P<args>.+)\))?`)
 
 // NewAppInfo returns a representation of an application config file
-func NewAppInfo(yamlAppConfigFileName string) *AppInfo {
+func NewAppInfo(appConfigFile string) *AppInfo {
 
-	absYamlAppConfigFileName, err := filepath.Abs(yamlAppConfigFileName)
+	absAppConfigFile, err := filepath.Abs(appConfigFile)
 	util.CheckErr(err)
 
-	yamlAppFileReader, err := os.Open(absYamlAppConfigFileName)
+	yamlAppFileReader, err := os.Open(absAppConfigFile)
 	util.CheckErr(err)
 
-	env := getEnv()
+	env := getEnv(absAppConfigFile)
 
-	appConfig := newAppInfo(yamlAppFileReader, env)
-	return appConfig
+	appInfo := newAppInfo(yamlAppFileReader, env)
+	return appInfo
 }
 
 // newAppInfo returns a representation of an application config
@@ -96,19 +97,19 @@ func newAppInfo(yamlAppConfigReader io.Reader, env environment) *AppInfo {
 	}
 }
 
-func validate(appConfig yamlSpec) {
+func validate(appInfoConfig yamlSpec) {
 	// check version
-	if appConfig.Compatibility != "" {
+	if appInfoConfig.Compatibility != "" {
 		cfVersion := version.ContainerFlightVersion()
-		parsedRange, err := semver.ParseRange(appConfig.Compatibility)
+		parsedRange, err := semver.ParseRange(appInfoConfig.Compatibility)
 		util.CheckErrMsg(err, "Version information must match semver 2.0.0 (https://semver.org/)!")
 		if !parsedRange(cfVersion) {
-			logFatalf("App file is not compatible with current Container Flight version %s!", cfVersion.String())
+			logFatalf("App file is not compatible with current containerflight version %s!", cfVersion.String())
 		}
 	}
 }
 
-// read and parse app config
+// read and parse app config file
 func getAppConfig(yamlAppConfigReader io.Reader) yamlSpec {
 
 	// read the app file
@@ -127,12 +128,13 @@ func getAppConfig(yamlAppConfigReader io.Reader) yamlSpec {
 // map the parameters which can be used in an app file to their corresponding values
 func getResolvedParameters(env environment) map[string]string {
 	return map[string]string{
-		"USERNAME":  env.userName,
-		"USERID":    env.userID,
-		"GROUPNAME": env.groupName,
-		"GROUPID":   env.groupID,
-		"HOME":      env.homeDir,
-		"PWD":       env.workingDir,
+		"APP_FILE_DIR": env.AppFileDir,
+		"USERNAME":     env.userName,
+		"USERID":       env.userID,
+		"GROUPNAME":    env.groupName,
+		"GROUPID":      env.groupID,
+		"HOME":         env.homeDir,
+		"PWD":          env.workingDir,
 		"SET_PROXY": "ENV http_proxy=${ENV(http_proxy)}\n" +
 			"ENV https_proxy=${ENV(https_proxy)}\n" +
 			"ENV no_proxy=${ENV(no_proxy)}\n",
@@ -158,10 +160,6 @@ func getResolvedParameters(env environment) map[string]string {
 			"    fi ;\n\n" +
 			"USER ${USERNAME}",
 	}
-}
-
-var getEnvVar = func(name string) string {
-	return os.Getenv(name)
 }
 
 // search and replace parameters in string
@@ -206,7 +204,42 @@ func (cfg *AppInfo) replaceParameters(str *string) {
 	}
 }
 
-// GetDockerfile returns for an application file the resolved dockerfile
+// GetResolvedAppConfig returns the resolved app file
+func (cfg *AppInfo) GetResolvedAppConfig() string {
+
+	appConfigByte, err := yaml.Marshal(&cfg.appConfig)
+	util.CheckErr(err)
+
+	appConfigStr := string(appConfigByte)
+
+	// replace parameters
+	cfg.replaceParameters(&appConfigStr)
+
+	return appConfigStr
+
+}
+
+// GetAppFileDir returns the app file directory
+func (cfg *AppInfo) GetAppFileDir() string {
+	return cfg.env.AppFileDir
+}
+
+// GetAppConfigFile returns the app file
+func (cfg *AppInfo) GetAppConfigFile() string {
+	return cfg.env.appConfigFile
+}
+
+// GetVersion returns the version of an application file
+func (cfg *AppInfo) GetVersion() string {
+	version := cfg.appConfig.Version
+
+	// replace parameters
+	cfg.replaceParameters(&version)
+
+	return version
+}
+
+// GetDockerfile returns for an app file the resolved dockerfile
 func (cfg *AppInfo) GetDockerfile() (dockerfile string) {
 	re := regexp.MustCompile("^docker://")
 	dockerfile = re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ")
@@ -221,12 +254,12 @@ func (cfg *AppInfo) GetDockerfile() (dockerfile string) {
 	// replace parameters
 	cfg.replaceParameters(&dockerfile)
 
-	log.Debug("dockerfile: %v", dockerfile)
+	log.Debug("dockerfile: ", dockerfile)
 
 	return dockerfile
 }
 
-// GetDockerRunArgs returns for an application file the resolved docker run arguments
+// GetDockerRunArgs returns for an app file the resolved docker run arguments
 func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 	defaultDockerArgs := map[string]string{
 		"-h": "flybydocker",
@@ -274,7 +307,11 @@ func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 		cfg.replaceParameters(&dockerRunArgs[i])
 	}
 
-	log.Debug("dockerRunArgs: %v", dockerRunArgs)
+	log.Debug("dockerRunArgs: ", dockerRunArgs)
 
 	return dockerRunArgs
+}
+
+var getEnvVar = func(name string) string {
+	return os.Getenv(name)
 }

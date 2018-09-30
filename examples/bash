@@ -5,5 +5,3 @@ console: true
 
 image:
     base: docker://ubuntu:18.04
-    dockerfile: |
-        ENTRYPOINT [ "/bin/bash" ]

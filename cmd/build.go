@@ -12,19 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package cmd
 
 import (
-	"fmt"
+	"github.com/tjeske/containerflight/core"
 
-	"github.com/tjeske/containerflight/appconfig"
+	"github.com/docker/cli/cli"
+	"github.com/spf13/cobra"
 )
 
-// PrintDockerfile loads an app file and dump the processed dockerfile
-func PrintDockerfile(yamlAppConfigFileName string) {
+// buildCmd represents the build command
+var buildCmd = &cobra.Command{
+	Use:   "build [OPTIONS] APPFILE",
+	Short: "Build a containerflight app image",
+	Long:  `Build a containerflight app image`,
+	Args:  cli.RequiresMinArgs(1),
+	DisableFlagsInUseLine: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		core.Build(args[0])
+	},
+}
 
-	appInfo := appconfig.NewAppInfo(yamlAppConfigFileName)
-	dockerfile := appInfo.GetDockerfile()
-
-	fmt.Println(dockerfile)
+func init() {
+	rootCmd.AddCommand(buildCmd)
+	flags := buildCmd.Flags()
+	flags.SetInterspersed(false)
 }

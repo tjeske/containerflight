@@ -12,26 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package appconfig
+package appinfo
 
 import (
 	"os"
 	"os/user"
+	"path/filepath"
 
 	"github.com/tjeske/containerflight/util"
 )
 
 type environment struct {
-	userName   string
-	userID     string
-	groupName  string
-	groupID    string
-	homeDir    string
-	workingDir string
+	appConfigFile string
+	AppFileDir    string
+	userName      string
+	userID        string
+	groupName     string
+	groupID       string
+	homeDir       string
+	workingDir    string
 }
 
 // Determine the current environment
-func getEnv() environment {
+func getEnv(appConfigFile string) environment {
+
+	absAppConfigFile, err := filepath.Abs(appConfigFile)
+	util.CheckErr(err)
+
+	AppFileDir := filepath.Dir(absAppConfigFile)
 
 	// current user
 	currentUser, err := user.Current()
@@ -45,11 +53,13 @@ func getEnv() environment {
 
 	// create environment object
 	var env = environment{
-		userName:   currentUser.Username,
-		userID:     currentUser.Uid,
-		groupName:  groupName.Name,
-		groupID:    currentUser.Gid,
-		homeDir:    currentUser.HomeDir,
-		workingDir: workingDir}
+		appConfigFile: absAppConfigFile,
+		AppFileDir:    AppFileDir,
+		userName:      currentUser.Username,
+		userID:        currentUser.Uid,
+		groupName:     groupName.Name,
+		groupID:       currentUser.Gid,
+		homeDir:       currentUser.HomeDir,
+		workingDir:    workingDir}
 	return env
 }

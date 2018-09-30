@@ -24,8 +24,8 @@ import (
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run [OPTIONS] APPFILE",
-	Short: "Run a Container Flight app",
-	Long:  `Run a Container Flight app`,
+	Short: "Run a containerflight app",
+	Long:  `Run a containerflight app`,
 	Args:  cli.RequiresMinArgs(1),
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {

@@ -21,7 +21,7 @@ import (
 
 var versionStr = "0.2.0-snapshot"
 
-// ContainerFlightVersion returns the current Container Flight version
+// ContainerFlightVersion returns the current containerflight version
 func ContainerFlightVersion() semver.Version {
 	containerFlightVersion, err := semver.Make(versionStr)
 	util.CheckErr(err)

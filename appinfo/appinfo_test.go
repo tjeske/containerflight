@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package appconfig
+package appinfo
 
 import (
 	"fmt"
@@ -180,11 +180,11 @@ RUN if ! getent group testgroup > /dev/null 2>&1; then \
     if ! getent passwd testuser > /dev/null 2>&1; then \
         ( \
             # fedora\
-            adduser --gid testgroup --uid 1234 testuser || \
+            adduser --gid testgroup --uid 1234 --base-dir "/home" testuser || \
             # ubuntu\
-            adduser --uid 1234 --gecos "" --ingroup testgroup --disabled-password testuser || \
+            adduser --home "/home" --uid 1234 --gecos "" --ingroup testgroup --disabled-password testuser || \
             # busybox\
-            adduser -u 1234 -D -H -G testgroup testuser \
+            adduser -h "/home" -u 1234 -D -H -G testgroup testuser \
         ) > /dev/null 2>&1 ; \
     fi ;
 
