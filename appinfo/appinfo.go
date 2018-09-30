@@ -151,11 +151,11 @@ func getResolvedParameters(env environment) map[string]string {
 			"    if ! getent passwd ${USERNAME} > /dev/null 2>&1; then \\\n" +
 			"        ( \\\n" +
 			"            # fedora\\\n" +
-			"            adduser --gid ${GROUPNAME} --uid ${USERID} ${USERNAME} || \\\n" +
+			"            adduser --gid ${GROUPNAME} --uid ${USERID} --base-dir \"${HOME}\" ${USERNAME} || \\\n" +
 			"            # ubuntu\\\n" +
-			"            adduser --uid ${USERID} --gecos \"\" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \\\n" +
+			"            adduser --home \"${HOME}\" --uid ${USERID} --gecos \"\" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \\\n" +
 			"            # busybox\\\n" +
-			"            adduser -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \\\n" +
+			"            adduser -h \"${HOME}\" -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \\\n" +
 			"        ) > /dev/null 2>&1 ; \\\n" +
 			"    fi ;\n\n" +
 			"USER ${USERNAME}",
