@@ -1,0 +1,19 @@
+#!/usr/local/bin/containerflight run
+compatibility: ">=0.2.0-snapshot <1.0.0"
+version: 1.5.1
+
+console: true
+
+image:
+    base: docker://python:3.6.0
+    dockerfile: |
+        # install gcc
+        RUN apt-get update && \
+            export DEBIAN_FRONTEND=noninteractive && \
+            apt-get install -y gcc && \
+            rm -rf /var/lib/apt/lists/*
+        
+        # install scrapy==1.5.1
+        RUN pip install scrapy
+
+        ENTRYPOINT [ "scrapy" ]
