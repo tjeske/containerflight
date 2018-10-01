@@ -270,9 +270,10 @@ func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 			delete(defaultDockerArgs, arg)
 		}
 	}
-	dockerRunArgs = append([]string{
-		"-v", "${PWD}:${PWD}"},
-		cfg.appConfig.Runtime.Docker.RunArgs...)
+	dockerRunArgs = append(
+		[]string{"-v", "${PWD}:${PWD}"},
+		cfg.appConfig.Runtime.Docker.RunArgs...,
+	)
 
 	if cfg.appConfig.Console {
 		fi, _ := os.Stdin.Stat()
@@ -304,6 +305,21 @@ func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 
 	// replace parameters
 	for i := range dockerRunArgs {
+		cfg.replaceParameters(&dockerRunArgs[i])
+	}
+
+	// use absolute dirs for volumes so that duplicated mount points can be detected by Docker
+	for i := range dockerRunArgs {
+		if strings.TrimSpace(dockerRunArgs[i]) == "-v" && i+1 < len(dockerRunArgs) {
+			dirs := strings.Split(dockerRunArgs[i+1], ":")
+			if len(dirs) == 2 {
+				hostPath, _ := filepath.Abs(dirs[0])
+				containerPath, _ := filepath.Abs(dirs[1])
+				i++
+				dockerRunArgs[i] = hostPath + ":" + containerPath
+			}
+
+		}
 		cfg.replaceParameters(&dockerRunArgs[i])
 	}
 
