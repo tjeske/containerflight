@@ -19,6 +19,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/afero"
+
 	"github.com/tjeske/containerflight/version"
 
 	"github.com/stretchr/testify/assert"
@@ -98,6 +100,47 @@ func TestDockerfileApt(t *testing.T) {
 	testDockerfile(t, appConfigStr, expDockerfile)
 }
 
+func TestDockerfileFromFileAbsolute(t *testing.T) {
+	filesystem = afero.NewMemMapFs()
+	filesystem.Mkdir("foo", 0755)
+	afero.WriteFile(filesystem, "/foo/Dockerfile", []byte("RUN script.sh"), 0644)
+
+	appConfigStr :=
+		"image:\n" +
+			"    dockerfile: file:///foo/Dockerfile"
+
+	expDockerfile := fmt.Sprintf(dockerFileTmpl, "RUN script.sh")
+
+	testDockerfile(t, appConfigStr, expDockerfile)
+}
+
+func TestDockerfileFromFileRelative(t *testing.T) {
+	filesystem = afero.NewMemMapFs()
+	filesystem.Mkdir("foo", 0755)
+	afero.WriteFile(filesystem, "/foo/Dockerfile", []byte("RUN script.sh"), 0644)
+
+	appConfigStr :=
+		"image:\n" +
+			"    dockerfile: file://../foo/Dockerfile"
+
+	expDockerfile := fmt.Sprintf(dockerFileTmpl, "RUN script.sh")
+
+	testDockerfile(t, appConfigStr, expDockerfile)
+}
+
+func TestDockerfileFromFileNotFound(t *testing.T) {
+	filesystem = afero.NewMemMapFs()
+
+	testForLogFatal(t, func() {
+		appConfigStr :=
+			"image:\n" +
+				"    dockerfile: file://notthere/Dockerfile"
+
+		yamlAppConfigReader := strings.NewReader(appConfigStr)
+		appInfo := newAppInfo(yamlAppConfigReader, env)
+		appInfo.GetDockerfile()
+	})
+}
 func TestDockerfileError(t *testing.T) {
 
 	appConfigStr :=

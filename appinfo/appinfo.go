@@ -26,11 +26,13 @@ import (
 	"github.com/blang/semver"
 	yaml "github.com/go-yaml/yaml"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 	"github.com/tjeske/containerflight/util"
 	"github.com/tjeske/containerflight/version"
 )
 
 var logFatalf = log.Fatalf
+var filesystem = afero.NewOsFs()
 
 // specification of an app file
 type yamlSpec struct {
@@ -240,22 +242,48 @@ func (cfg *AppInfo) GetVersion() string {
 }
 
 // GetDockerfile returns for an app file the resolved dockerfile
-func (cfg *AppInfo) GetDockerfile() (dockerfile string) {
+func (cfg *AppInfo) GetDockerfile() string {
+	dockerfileFinal := ""
 	re := regexp.MustCompile("^docker://")
-	dockerfile = re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ")
-	if dockerfile != "" {
-		dockerfile += "\n\n"
+	baseImage := re.ReplaceAllString(cfg.appConfig.Image.Base, "FROM ")
+	if baseImage != "" {
+		dockerfileFinal += baseImage + "\n\n"
 	}
 
-	dockerfile += cfg.resolvedParams["SET_PROXY"] + "\n" +
-		cfg.appConfig.Image.Dockerfile + "\n" +
+	dockerfile := cfg.handleDockerfileLoad(cfg.appConfig.Image.Dockerfile)
+
+	dockerfileFinal += cfg.resolvedParams["SET_PROXY"] + "\n" +
+		dockerfile + "\n" +
 		cfg.resolvedParams["USER_CTX"]
 
 	// replace parameters
-	cfg.replaceParameters(&dockerfile)
+	cfg.replaceParameters(&dockerfileFinal)
 
-	log.Debug("dockerfile: ", dockerfile)
+	log.Debug("dockerfile: ", dockerfileFinal)
 
+	return dockerfileFinal
+}
+
+// deal with "file://" notation in image -> dockerfile
+func (cfg *AppInfo) handleDockerfileLoad(dockerfile string) string {
+	if len(strings.Split(dockerfile, "\n")) == 1 {
+		split := regexp.MustCompile("^file://").Split(strings.TrimSpace(dockerfile), 2)
+		if len(split) == 2 {
+			userFileName := split[1]
+
+			// try to interpret as an absolute path
+			rawData, err := afero.ReadFile(filesystem, userFileName)
+			if err != nil {
+				// cannot open file -> try to interpret as a relative path
+				fileName := filepath.Join(cfg.env.appFileDir, userFileName)
+				rawData, err = afero.ReadFile(filesystem, fileName)
+				if err != nil {
+					logFatalf("Cannot read file \"" + fileName + "\"!")
+				}
+			}
+			dockerfile = string(rawData)
+		}
+	}
 	return dockerfile
 }
 

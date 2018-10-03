@@ -36,6 +36,10 @@
   name = "github.com/stretchr/testify"
   version = "1.2.1"
 
+[[constraint]]
+    name = "github.com/spf13/afero"
+    revision = "v1.1.2"
+
 [[override]]
     name = "github.com/docker/cli"
     revision = "v17.12.1-ce"

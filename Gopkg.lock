@@ -264,6 +264,14 @@
   revision = "v1.0.3"
 
 [[projects]]
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem"
+  ]
+  revision = "v1.1.2"
+
+[[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
   revision = "34ceca591bcf34a17a8b7bad5b3ce5f9c165bee5"
@@ -274,17 +282,8 @@
   revision = "97afa5e7ca8a08a383cb259e06636b5e2cc7897f"
 
 [[projects]]
-  name = "github.com/stretchr/objx"
-  packages = ["."]
-  revision = "facf9a85c22f48d2f52f2380e4efce1768749a89"
-  version = "v0.1"
-
-[[projects]]
   name = "github.com/stretchr/testify"
-  packages = [
-    "assert",
-    "mock"
-  ]
+  packages = ["assert"]
   revision = "4d4bfba8f1d1027c4fdbe371823030df51419987"
 
 [[projects]]
@@ -419,6 +418,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "550ba7dae2537d897e4fa678578ef8966c0c5279d5ef14b0c424c2ef0d9fe8e5"
+  inputs-digest = "dcd32183ef492a903d9927b48af6d614e27c385a7e43eeb9ba25dfd6f6a7188c"
   solver-name = "gps-cdcl"
   solver-version = 1
