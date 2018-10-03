@@ -29,6 +29,7 @@ import (
 
 // fake environment
 var env = environment{
+	appFileDir: "/appFileDir",
 	userName:   "testuser",
 	userID:     "1234",
 	groupName:  "testgroup",
@@ -61,6 +62,7 @@ func TestDockerfileBasic(t *testing.T) {
 	appConfigStr :=
 		"image:\n" +
 			"    dockerfile: |\n" +
+			"        ${APP_FILE_DIR}\n" +
 			"        ${USERNAME}\n" +
 			"        ${USERID}\n" +
 			"        ${GROUPNAME}\n" +
@@ -69,7 +71,8 @@ func TestDockerfileBasic(t *testing.T) {
 			"        ${PWD}\n"
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl,
-		"testuser\n"+
+		"/appFileDir\n"+
+			"testuser\n"+
 			"1234\n"+
 			"testgroup\n"+
 			"5678\n"+
