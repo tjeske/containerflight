@@ -128,7 +128,7 @@ func getAppConfig(yamlAppConfigReader io.Reader) yamlSpec {
 // map the parameters which can be used in an app file to their corresponding values
 func getResolvedParameters(env environment) map[string]string {
 	return map[string]string{
-		"APP_FILE_DIR": env.AppFileDir,
+		"APP_FILE_DIR": env.appFileDir,
 		"USERNAME":     env.userName,
 		"USERID":       env.userID,
 		"GROUPNAME":    env.groupName,
@@ -221,7 +221,7 @@ func (cfg *AppInfo) GetResolvedAppConfig() string {
 
 // GetAppFileDir returns the app file directory
 func (cfg *AppInfo) GetAppFileDir() string {
-	return cfg.env.AppFileDir
+	return cfg.env.appFileDir
 }
 
 // GetAppConfigFile returns the app file

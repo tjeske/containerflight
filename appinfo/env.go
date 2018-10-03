@@ -24,7 +24,7 @@ import (
 
 type environment struct {
 	appConfigFile string
-	AppFileDir    string
+	appFileDir    string
 	userName      string
 	userID        string
 	groupName     string
@@ -39,7 +39,7 @@ func getEnv(appConfigFile string) environment {
 	absAppConfigFile, err := filepath.Abs(appConfigFile)
 	util.CheckErr(err)
 
-	AppFileDir := filepath.Dir(absAppConfigFile)
+	appFileDir := filepath.Dir(absAppConfigFile)
 
 	// current user
 	currentUser, err := user.Current()
@@ -54,7 +54,7 @@ func getEnv(appConfigFile string) environment {
 	// create environment object
 	var env = environment{
 		appConfigFile: absAppConfigFile,
-		AppFileDir:    AppFileDir,
+		appFileDir:    appFileDir,
 		userName:      currentUser.Username,
 		userID:        currentUser.Uid,
 		groupName:     groupName.Name,
