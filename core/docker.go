@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -222,11 +223,56 @@ func (dockerClient *dockerClient) getDockerContainerHash() string {
 	appConfigStr := dockerClient.appInfo.GetResolvedAppConfig()
 	cfVersion := version.ContainerFlightVersion().String()
 
-	appConfigBytes := []byte(appConfigStr)
-	// hash config file
 	hash := sha256.New()
+
+	// hash config file
+	appConfigBytes := []byte(appConfigStr)
 	hash.Write(appConfigBytes)
+
+	// hash containerflight version
 	hash.Write([]byte(cfVersion))
+
+	// hash Docker build context if relevant
+	dockerBuildCtx := dockerClient.appInfo.GetAppFileDir()
+	if dockerClient.isContextUsed() {
+		filepath.Walk(dockerBuildCtx, func(fileName string, fi os.FileInfo, err error) error {
+
+			// return on any error
+			if err != nil {
+				return err
+			}
+
+			// open files for taring
+			fh, err := os.Open(fileName)
+			if err != nil {
+				return err
+			}
+
+			// hash file
+			if _, err := io.Copy(hash, fh); err != nil {
+				return err
+			}
+
+			fh.Close()
+
+			return nil
+		})
+	}
+
 	hashStr := hex.EncodeToString(hash.Sum(nil))
 	return hashStr
+}
+
+// isContextUsed returns true if files from the Docker build context should be added to the Docker image
+func (dockerClient *dockerClient) isContextUsed() (isUsed bool) {
+	dockerfileLines := strings.Split(dockerClient.appInfo.GetDockerfile(), "\n")
+	isUsed = false
+	for _, dockerfileLine := range dockerfileLines {
+		linePreProcessed := strings.ToUpper(strings.TrimSpace(dockerfileLine))
+		if strings.HasPrefix(linePreProcessed, "COPY ") || strings.HasPrefix(linePreProcessed, "ADD ") {
+			isUsed = true
+			break
+		}
+	}
+	return isUsed
 }
