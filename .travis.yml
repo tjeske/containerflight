@@ -1,5 +1,7 @@
 language: go
-sudo: false
+sudo: required
+services:
+  - docker
 matrix:
   include:
   - go: 1.9.x
@@ -16,6 +18,7 @@ before_install:
 script:
 - go build -ldflags '-s'
 - go test ./...
+- ./containerflight run -d examples/python3.7 --version
 - $GOPATH/bin/goveralls -service=travis-ci
 deploy:
   provider: releases
