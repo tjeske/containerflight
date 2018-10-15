@@ -34,7 +34,7 @@ type environment struct {
 }
 
 // Determine the current environment
-func getEnv(appConfigFile string) environment {
+var getEnv = func(appConfigFile string) environment {
 
 	absAppConfigFile, err := filepath.Abs(appConfigFile)
 	util.CheckErr(err)
@@ -60,6 +60,7 @@ func getEnv(appConfigFile string) environment {
 		groupName:     groupName.Name,
 		groupID:       currentUser.Gid,
 		homeDir:       currentUser.HomeDir,
-		workingDir:    workingDir}
+		workingDir:    workingDir,
+	}
 	return env
 }

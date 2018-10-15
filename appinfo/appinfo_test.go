@@ -16,33 +16,59 @@ package appinfo
 
 import (
 	"fmt"
-	"strings"
-	"testing"
-
+	yaml "github.com/go-yaml/yaml"
 	"github.com/spf13/afero"
-
-	"github.com/tjeske/containerflight/version"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/tjeske/containerflight/util"
-
-	yaml "github.com/go-yaml/yaml"
+	"github.com/tjeske/containerflight/version"
+	"testing"
 )
 
-// fake environment
-var env = environment{
-	appFileDir: "/appFileDir",
-	userName:   "testuser",
-	userID:     "1234",
-	groupName:  "testgroup",
-	groupID:    "5678",
-	homeDir:    "/home",
-	workingDir: "/myworkingdir",
+func init() {
+	// emulate file system
+	filesystem = afero.NewMemMapFs()
 }
 
 func TestEmpty(t *testing.T) {
 	testAppConfigAssert(t, "", "")
 }
+
+// ---
+
+func TestResolvedAppConfig(t *testing.T) {
+	appConfigStr := "description: home = ${HOME}"
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+
+	resolvedAppConfigStr := appInfo.GetResolvedAppConfig()
+
+	// analyze the resolved app config file again
+	appInfo2 := NewFakeAppInfo(&filesystem, "/testAppFile2", resolvedAppConfigStr)
+
+	assert.Equal(t, fmt.Sprintf("%#v", ""), fmt.Sprintf("%#v", appInfo2.GetAppVersion()))
+	assert.Equal(t, fmt.Sprintf("%#v", "home = /home"), fmt.Sprintf("%#v", appInfo2.GetAppDescription()))
+}
+
+// ---
+
+func TestAppFileDir(t *testing.T) {
+	filesystem.Mkdir("/appFileDir", 0755)
+
+	appInfo := NewFakeAppInfo(&filesystem, "/appFileDir/testAppFile", "")
+
+	appFileDir := appInfo.GetAppFileDir()
+
+	assert.Equal(t, "/appFileDir", appFileDir)
+}
+
+func TestAppConfigFile(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "")
+
+	appConfigFile := appInfo.GetAppConfigFile()
+
+	assert.Equal(t, "/testAppFile", appConfigFile)
+}
+
+// ---
 
 func TestCompatibilityMatch(t *testing.T) {
 	cfVersion := version.ContainerFlightVersion()
@@ -55,6 +81,44 @@ func TestCompatibilityMustFail(t *testing.T) {
 		appConfigStr := "compatibility: 999.0.0"
 		testAppConfig(t, appConfigStr, appConfigStr)
 	})
+}
+
+// ---
+
+func TestAppName(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "name: myName")
+
+	appName := appInfo.GetAppName()
+
+	assert.Equal(t, "myName", appName)
+}
+
+func TestAppNameNotSet(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "")
+
+	appName := appInfo.GetAppName()
+
+	assert.Equal(t, "testAppFile", appName)
+}
+
+// ---
+
+func TestAppVersion(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "version: 0.1")
+
+	appVersion := appInfo.GetAppVersion()
+
+	assert.Equal(t, "0.1", appVersion)
+}
+
+// ---
+
+func TestAppDescription(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "description: some description")
+
+	appDescription := appInfo.GetAppDescription()
+
+	assert.Equal(t, "some description", appDescription)
 }
 
 // ---
@@ -73,7 +137,7 @@ func TestDockerfileBasic(t *testing.T) {
 			"        ${PWD}\n"
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl,
-		"/appFileDir\n"+
+		"/\n"+
 			"testuser\n"+
 			"1234\n"+
 			"testgroup\n"+
@@ -81,7 +145,8 @@ func TestDockerfileBasic(t *testing.T) {
 			"/home\n"+
 			"/myworkingdir\n")
 
-	testDockerfile(t, appConfigStr, expDockerfile)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
 }
 
 func TestDockerfileApt(t *testing.T) {
@@ -97,12 +162,12 @@ func TestDockerfileApt(t *testing.T) {
 			"    apt-get install -y pkg1 pkg2 && \\\n"+
 			"    rm -rf /var/lib/apt/lists/*\n")
 
-	testDockerfile(t, appConfigStr, expDockerfile)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
 }
 
 func TestDockerfileFromFileAbsolute(t *testing.T) {
-	filesystem = afero.NewMemMapFs()
-	filesystem.Mkdir("foo", 0755)
+	filesystem.Mkdir("/foo", 0755)
 	afero.WriteFile(filesystem, "/foo/Dockerfile", []byte("RUN script.sh"), 0644)
 
 	appConfigStr :=
@@ -111,11 +176,11 @@ func TestDockerfileFromFileAbsolute(t *testing.T) {
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl, "RUN script.sh")
 
-	testDockerfile(t, appConfigStr, expDockerfile)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
 }
 
 func TestDockerfileFromFileRelative(t *testing.T) {
-	filesystem = afero.NewMemMapFs()
 	filesystem.Mkdir("foo", 0755)
 	afero.WriteFile(filesystem, "/foo/Dockerfile", []byte("RUN script.sh"), 0644)
 
@@ -125,19 +190,17 @@ func TestDockerfileFromFileRelative(t *testing.T) {
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl, "RUN script.sh")
 
-	testDockerfile(t, appConfigStr, expDockerfile)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
 }
 
 func TestDockerfileFromFileNotFound(t *testing.T) {
-	filesystem = afero.NewMemMapFs()
-
 	testForLogFatal(t, func() {
 		appConfigStr :=
 			"image:\n" +
 				"    dockerfile: file://notthere/Dockerfile"
 
-		yamlAppConfigReader := strings.NewReader(appConfigStr)
-		appInfo := newAppInfo(yamlAppConfigReader, env)
+		appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 		appInfo.GetDockerfile()
 	})
 }
@@ -150,7 +213,8 @@ func TestDockerfileError(t *testing.T) {
 
 	expDockerfile := fmt.Sprintf(dockerFileTmpl, "<<ERROR!>>\n")
 
-	testDockerfile(t, appConfigStr, expDockerfile)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
 }
 
 // ---
@@ -161,7 +225,8 @@ func TestDockerRunArgsEmpty(t *testing.T) {
 
 	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-h", "flybydocker", "-w", "/myworkingdir"}
 
-	testDockerRunArgs(t, appConfigStr, expDockerRunArgs)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
 }
 
 func TestDockerRunArgsSetWorkingDir(t *testing.T) {
@@ -173,7 +238,8 @@ func TestDockerRunArgsSetWorkingDir(t *testing.T) {
 
 	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-w", "/newworkingdir", "-h", "flybydocker"}
 
-	testDockerRunArgs(t, appConfigStr, expDockerRunArgs)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
 }
 
 func TestDockerRunArgsSetHostname(t *testing.T) {
@@ -185,7 +251,8 @@ func TestDockerRunArgsSetHostname(t *testing.T) {
 
 	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-h", "myhostname", "-w", "/myworkingdir"}
 
-	testDockerRunArgs(t, appConfigStr, expDockerRunArgs)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
 }
 
 func TestDockerRunArgsConsole(t *testing.T) {
@@ -194,7 +261,8 @@ func TestDockerRunArgsConsole(t *testing.T) {
 
 	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-ti", "-h", "flybydocker", "-w", "/myworkingdir"}
 
-	testDockerRunArgs(t, appConfigStr, expDockerRunArgs)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
 }
 
 func TestDockerRunArgsGui(t *testing.T) {
@@ -203,7 +271,8 @@ func TestDockerRunArgsGui(t *testing.T) {
 
 	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-e", "DISPLAY=DISPLAY", "-v", "/tmp/.X11-unix:/tmp/.X11-unix", "-h", "flybydocker", "-w", "/myworkingdir"}
 
-	testDockerRunArgs(t, appConfigStr, expDockerRunArgs)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
 }
 
 // ---
@@ -247,8 +316,7 @@ func testAppConfig(t *testing.T, expAppConfigStr string, appConfigStr string) (y
 	err := yaml.UnmarshalStrict([]byte(expAppConfigStr), &expAppConfig)
 	util.CheckErr(err)
 
-	yamlAppConfigReader := strings.NewReader(appConfigStr)
-	appInfo := newAppInfo(yamlAppConfigReader, env)
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 
 	return expAppConfig, appInfo.appConfig
 }
@@ -268,34 +336,4 @@ func testForLogFatal(t *testing.T, testFunc func()) {
 	if numErrors != 1 {
 		t.Errorf("excepted one error, actual %v", numErrors)
 	}
-}
-
-func testDockerfile(t *testing.T, appConfigStr string, expDockerfile string) {
-
-	origGetEnvVar := getEnvVar
-	defer func() { getEnvVar = origGetEnvVar }()
-
-	getEnvVar = func(name string) string {
-		return name
-	}
-
-	yamlAppConfigReader := strings.NewReader(appConfigStr)
-	appInfo := newAppInfo(yamlAppConfigReader, env)
-
-	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
-}
-
-func testDockerRunArgs(t *testing.T, appConfigStr string, expDockerRunArgs []string) {
-
-	origGetEnvVar := getEnvVar
-	defer func() { getEnvVar = origGetEnvVar }()
-
-	getEnvVar = func(name string) string {
-		return name
-	}
-
-	yamlAppConfigReader := strings.NewReader(appConfigStr)
-	appInfo := newAppInfo(yamlAppConfigReader, env)
-
-	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
 }

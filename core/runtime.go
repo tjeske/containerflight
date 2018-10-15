@@ -34,9 +34,10 @@ func PrintDockerfile(yamlAppConfigFileName string) {
 func PrintDockerRunArgs(yamlAppConfigFileName string) {
 
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
-	dockerClient := newDockerClient(appInfo)
+	dockerClient := NewDockerClient(appInfo)
 
-	dockerRunCmdArgs := dockerClient.getDockerRunCmdArgs([]string{})
+	imageID := dockerClient.getImageID()
+	dockerRunCmdArgs := dockerClient.getRunCmdArgs(imageID, []string{})
 
 	fmt.Println("\"docker run\" will be called with the following arguments:\n" + strings.Join(dockerRunCmdArgs, " "))
 }
@@ -45,7 +46,7 @@ func PrintDockerRunArgs(yamlAppConfigFileName string) {
 func Build(yamlAppConfigFileName string) {
 
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
-	dockerClient := newDockerClient(appInfo)
+	dockerClient := NewDockerClient(appInfo)
 
 	AppFileDir := appInfo.GetAppFileDir()
 
@@ -58,11 +59,10 @@ func Build(yamlAppConfigFileName string) {
 
 // Run starts an app in a container.
 // If the container does not exists it is built upfront.
-func Run(args []string) {
+func Run(yamlAppConfigFileName string, args []string) {
 
-	yamlAppConfigFileName := args[0]
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
-	dockerClient := newDockerClient(appInfo)
+	dockerClient := NewDockerClient(appInfo)
 
 	dockerClient.run(args)
 }

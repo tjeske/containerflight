@@ -15,6 +15,12 @@
 package appinfo
 
 import (
+	"github.com/blang/semver"
+	yaml "github.com/go-yaml/yaml"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
+	"github.com/tjeske/containerflight/util"
+	"github.com/tjeske/containerflight/version"
 	"io"
 	"io/ioutil"
 	"os"
@@ -22,15 +28,9 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/blang/semver"
-	yaml "github.com/go-yaml/yaml"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
-	"github.com/tjeske/containerflight/util"
-	"github.com/tjeske/containerflight/version"
 )
 
+// "mock connectors" for unit-tesing
 var logFatalf = log.Fatalf
 var filesystem = afero.NewOsFs()
 
@@ -74,20 +74,12 @@ func NewAppInfo(appConfigFile string) *AppInfo {
 	absAppConfigFile, err := filepath.Abs(appConfigFile)
 	util.CheckErr(err)
 
-	yamlAppFileReader, err := os.Open(absAppConfigFile)
+	yamlAppFileReader, err := filesystem.Open(absAppConfigFile)
 	util.CheckErr(err)
 
 	env := getEnv(absAppConfigFile)
 
-	appInfo := newAppInfo(yamlAppFileReader, env)
-	return appInfo
-}
-
-// newAppInfo returns a representation of an application config
-// use this function for tests
-func newAppInfo(yamlAppConfigReader io.Reader, env environment) *AppInfo {
-
-	appConfig := getAppConfig(yamlAppConfigReader)
+	appConfig := getAppConfig(yamlAppFileReader)
 
 	resolvedParams := getResolvedParameters(env)
 
@@ -100,6 +92,44 @@ func newAppInfo(yamlAppConfigReader io.Reader, env environment) *AppInfo {
 	}
 }
 
+// NewFakeAppInfo returns a fake representation of an application config file for unit-testing
+func NewFakeAppInfo(fs *afero.Fs, appConfigFile string, appConfigStr string) *AppInfo {
+	origFS := filesystem
+	defer func() { filesystem = origFS }()
+	filesystem = *fs
+
+	// mock environment variables
+	getEnvVar = func(name string) string {
+		return name
+	}
+
+	// mock environment
+	getEnv = func(appConfigFile string) environment {
+		absAppConfigFile, err := filepath.Abs(appConfigFile)
+		util.CheckErr(err)
+
+		appFileDir := filepath.Dir(absAppConfigFile)
+
+		// create environment object
+		var env = environment{
+			appConfigFile: absAppConfigFile,
+			appFileDir:    appFileDir,
+			userName:      "testuser",
+			userID:        "1234",
+			groupName:     "testgroup",
+			groupID:       "5678",
+			homeDir:       "/home",
+			workingDir:    "/myworkingdir",
+		}
+		return env
+	}
+
+	afero.WriteFile(filesystem, appConfigFile, []byte(appConfigStr), 0644)
+
+	return NewAppInfo(appConfigFile)
+}
+
+// validate app config file
 func validate(appInfoConfig yamlSpec) {
 	// check version
 	if appInfoConfig.Compatibility != "" {

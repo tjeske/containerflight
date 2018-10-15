@@ -29,7 +29,12 @@ var runCmd = &cobra.Command{
 	Args:  cli.RequiresMinArgs(1),
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		core.Run(args)
+		if len(args) > 1 {
+			core.Run(args[0], args[1:])
+		} else {
+			core.Run(args[0], []string{})
+		}
+
 	},
 }
 
