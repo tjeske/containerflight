@@ -40,7 +40,7 @@ type yamlSpec struct {
 	Name          string
 	Version       string
 	Description   string
-	Console       bool
+	Console       *bool
 	Gui           bool
 
 	Image struct {
@@ -296,6 +296,11 @@ func (cfg *AppInfo) GetAppDescription() string {
 	return description
 }
 
+// IsConsoleApp returns true if a TTY should be allocated and stdin should be opened (default behavior)
+func (cfg *AppInfo) IsConsoleApp() bool {
+	return cfg.appConfig.Console == nil || *cfg.appConfig.Console
+}
+
 // GetDockerfile returns for an app file the resolved dockerfile
 func (cfg *AppInfo) GetDockerfile() string {
 	dockerfileFinal := ""
@@ -358,7 +363,7 @@ func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 		cfg.appConfig.Runtime.Docker.RunArgs...,
 	)
 
-	if cfg.appConfig.Console {
+	if cfg.IsConsoleApp() {
 		fi, _ := os.Stdin.Stat()
 		if (fi.Mode() & os.ModeCharDevice) == 0 {
 			// input from pipe

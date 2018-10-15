@@ -176,9 +176,10 @@ func TestGetRunCmdArgs(t *testing.T) {
 		"--rm",
 		"--label", "containerflight_appFile=/testAppFile",
 		"--label", "containerflight_image=containerflight_testAppFile:unknown",
-		"--label", "containerflight_hash=a2e1bf92cadee0a5eb6b92b78728cbe3eec4914aa729bbebed89054a6c62403f",
+		"--label", "containerflight_hash=562a792d764ddceb355634b2ccee3878edf696021767ff0e8144eab2e2bf035f",
 		"--label", "containerflight_version=" + containerflightVersion,
 		"-v", "/myworkingdir:/myworkingdir",
+		"-ti",
 		"-h", "flybydocker",
 		"-w", "/myworkingdir",
 		"123",
@@ -237,7 +238,7 @@ func TestGetDockerContainerHash(t *testing.T) {
 	dockerClient := newDockerClient(appInfo)
 	hashStr := dockerClient.getDockerContainerHash()
 
-	assert.Equal(t, "a2e1bf92cadee0a5eb6b92b78728cbe3eec4914aa729bbebed89054a6c62403f", hashStr)
+	assert.Equal(t, "562a792d764ddceb355634b2ccee3878edf696021767ff0e8144eab2e2bf035f", hashStr)
 }
 
 func TestGetDockerContainerHashWithContext(t *testing.T) {
@@ -249,5 +250,5 @@ func TestGetDockerContainerHashWithContext(t *testing.T) {
 	dockerClient := newDockerClient(appInfo)
 	hashStr := dockerClient.getDockerContainerHash()
 
-	assert.Equal(t, "9e373efdbdfdf7eb5f925c872f0314d2bc492bbd341fad15c7479dc760badf15", hashStr)
+	assert.Equal(t, "c90e2a76c380fae4b63ec88566a327637cfd6fc3f26f88cdc0137961b02d10d9", hashStr)
 }

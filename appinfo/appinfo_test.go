@@ -123,6 +123,26 @@ func TestAppDescription(t *testing.T) {
 
 // ---
 
+func TestIsConsoleAppNotSet(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "")
+
+	assert.Equal(t, true, appInfo.IsConsoleApp())
+}
+
+func TestIsConsoleAppSetFalse(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "console: false")
+
+	assert.Equal(t, false, appInfo.IsConsoleApp())
+}
+
+func TestIsConsoleAppSetTrue(t *testing.T) {
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", "console: true")
+
+	assert.Equal(t, true, appInfo.IsConsoleApp())
+}
+
+// ---
+
 func TestDockerfileBasic(t *testing.T) {
 
 	appConfigStr :=
@@ -223,7 +243,7 @@ func TestDockerRunArgsEmpty(t *testing.T) {
 
 	appConfigStr := ""
 
-	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-h", "flybydocker", "-w", "/myworkingdir"}
+	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-ti", "-h", "flybydocker", "-w", "/myworkingdir"}
 
 	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
@@ -236,7 +256,7 @@ func TestDockerRunArgsSetWorkingDir(t *testing.T) {
 			"    docker:\n" +
 			"        runargs: [\"-w\", \"/newworkingdir\"]"
 
-	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-w", "/newworkingdir", "-h", "flybydocker"}
+	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-w", "/newworkingdir", "-ti", "-h", "flybydocker"}
 
 	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
@@ -249,7 +269,7 @@ func TestDockerRunArgsSetHostname(t *testing.T) {
 			"    docker:\n" +
 			"        runargs: [\"-h\", \"myhostname\"]"
 
-	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-h", "myhostname", "-w", "/myworkingdir"}
+	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-h", "myhostname", "-ti", "-w", "/myworkingdir"}
 
 	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
@@ -269,7 +289,7 @@ func TestDockerRunArgsGui(t *testing.T) {
 
 	appConfigStr := "gui: true"
 
-	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-e", "DISPLAY=DISPLAY", "-v", "/tmp/.X11-unix:/tmp/.X11-unix", "-h", "flybydocker", "-w", "/myworkingdir"}
+	expDockerRunArgs := []string{"-v", "/myworkingdir:/myworkingdir", "-ti", "-e", "DISPLAY=DISPLAY", "-v", "/tmp/.X11-unix:/tmp/.X11-unix", "-h", "flybydocker", "-w", "/myworkingdir"}
 
 	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 	assert.Equal(t, expDockerRunArgs, appInfo.GetDockerRunArgs())
