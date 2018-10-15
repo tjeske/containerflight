@@ -37,6 +37,7 @@ var filesystem = afero.NewOsFs()
 // specification of an app file
 type yamlSpec struct {
 	Compatibility string
+	Name          string
 	Version       string
 	Description   string
 	Console       bool
@@ -231,14 +232,38 @@ func (cfg *AppInfo) GetAppConfigFile() string {
 	return cfg.env.appConfigFile
 }
 
-// GetVersion returns the version of an application file
-func (cfg *AppInfo) GetVersion() string {
+// GetAppName returns the name of the application
+func (cfg *AppInfo) GetAppName() string {
+	name := cfg.appConfig.Name
+
+	// replace parameters
+	cfg.replaceParameters(&name)
+
+	if name == "" {
+		name = filepath.Base(cfg.env.appConfigFile)
+	}
+
+	return name
+}
+
+// GetAppVersion returns the version of an application file
+func (cfg *AppInfo) GetAppVersion() string {
 	version := cfg.appConfig.Version
 
 	// replace parameters
 	cfg.replaceParameters(&version)
 
 	return version
+}
+
+// GetAppDescription returns the description of an application file
+func (cfg *AppInfo) GetAppDescription() string {
+	description := cfg.appConfig.Description
+
+	// replace parameters
+	cfg.replaceParameters(&description)
+
+	return description
 }
 
 // GetDockerfile returns for an app file the resolved dockerfile
