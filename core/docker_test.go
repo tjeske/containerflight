@@ -41,7 +41,7 @@ func init() {
 
 func newMockHttpApiClient() *mockHttpApiClient {
 	imageRepo := []types.ImageSummary{
-		types.ImageSummary{
+		{
 			Containers: -1,
 			Created:    -1,
 			ID:         "sha256:123",
@@ -54,7 +54,7 @@ func newMockHttpApiClient() *mockHttpApiClient {
 				"containerflight_donotremove:testingversion",
 			},
 		},
-		types.ImageSummary{
+		{
 			Containers: -1,
 			Created:    -1,
 			ID:         "sha256:456",
@@ -67,7 +67,7 @@ func newMockHttpApiClient() *mockHttpApiClient {
 				"containerflight_testing:testingversion",
 			},
 		},
-		types.ImageSummary{
+		{
 			Containers: -1,
 			Created:    -1,
 			ID:         "sha256:789",
@@ -107,7 +107,7 @@ func newDockerClient(appInfo *appinfo.AppInfo) *DockerClient {
 	client := newMockHttpApiClient()
 
 	// Docker cli client
-	var dockerCli dockerCliClient = nil
+	var dockerCli dockerCliClient
 
 	return &DockerClient{appInfo: appInfo, client: client, dockerCli: dockerCli}
 }
