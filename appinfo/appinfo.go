@@ -177,7 +177,7 @@ func getResolvedParameters(env environment) map[string]string {
 			"            addgroup -g ${GROUPID} ${GROUPNAME} || \\\n" +
 			"            # busybox\\\n" +
 			"            addgroup --gid ${GROUPID} ${GROUPNAME} || \\\n" +
-			"            # fedora\\\n" +
+			"            # fedora / arch linux\\\n" +
 			"            groupadd --gid ${GROUPID} ${GROUPNAME} \\\n" +
 			"        ) > /dev/null 2>&1 ; \\\n" +
 			"    fi ; \\\n" +
@@ -188,7 +188,9 @@ func getResolvedParameters(env environment) map[string]string {
 			"            # ubuntu\\\n" +
 			"            adduser --home \"${HOME}\" --uid ${USERID} --gecos \"\" --ingroup ${GROUPNAME} --disabled-password ${USERNAME} || \\\n" +
 			"            # busybox\\\n" +
-			"            adduser -h \"${HOME}\" -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} \\\n" +
+			"            adduser -h \"${HOME}\" -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} || \\\n" +
+			"            # arch linux\\\n" +
+			"            useradd --no-user-group --gid ${GROUPID} --home-dir \"${HOME}\" --create-home ${USERNAME} \\\n" +
 			"        ) > /dev/null 2>&1 ; \\\n" +
 			"    fi ;\n\n" +
 			"USER ${USERNAME}",
