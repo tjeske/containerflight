@@ -308,7 +308,7 @@ RUN if ! getent group testgroup > /dev/null 2>&1; then \
             addgroup -g 5678 testgroup || \
             # busybox\
             addgroup --gid 5678 testgroup || \
-            # fedora\
+            # fedora / arch linux\
             groupadd --gid 5678 testgroup \
         ) > /dev/null 2>&1 ; \
     fi ; \
@@ -319,7 +319,9 @@ RUN if ! getent group testgroup > /dev/null 2>&1; then \
             # ubuntu\
             adduser --home "/home" --uid 1234 --gecos "" --ingroup testgroup --disabled-password testuser || \
             # busybox\
-            adduser -h "/home" -u 1234 -D -H -G testgroup testuser \
+            adduser -h "/home" -u 1234 -D -H -G testgroup testuser || \
+            # arch linux\
+            useradd --no-user-group --gid 5678 --home-dir "/home" --create-home testuser \
         ) > /dev/null 2>&1 ; \
     fi ;
 
