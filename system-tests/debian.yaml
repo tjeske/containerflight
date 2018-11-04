@@ -1,0 +1,7 @@
+#!/usr/local/bin/containerflight run
+compatibility: ">=0.2.0-snapshot <1.0.0"
+
+image:
+    base: docker://debian:latest
+    dockerfile: |
+        ENTRYPOINT ["cat", "/proc/version"]

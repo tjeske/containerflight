@@ -19,7 +19,7 @@ before_install:
 script:
 - go build -ldflags '-s'
 - go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-- ./containerflight run -d examples/python3.7 --version
+- ./system-tests/run.sh
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 deploy:
