@@ -1,0 +1,4 @@
+image:
+    base: docker://fedora:latest
+    dockerfile: |
+        ENTRYPOINT ["cat", "/proc/version"]

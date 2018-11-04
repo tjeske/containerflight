@@ -1,0 +1,4 @@
+image:
+    base: docker://debian:latest
+    dockerfile: |
+        ENTRYPOINT ["cat", "/proc/version"]

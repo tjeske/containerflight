@@ -1,0 +1,4 @@
+image:
+    base: docker://busybox:latest
+    dockerfile: |
+        ENTRYPOINT ["cat", "/proc/version"]

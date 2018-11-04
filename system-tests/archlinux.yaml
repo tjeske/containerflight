@@ -1,0 +1,4 @@
+image:
+    base: docker://base/archlinux:latest
+    dockerfile: |
+        ENTRYPOINT ["cat", "/proc/version"]
