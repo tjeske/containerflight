@@ -190,7 +190,7 @@ func getResolvedParameters(env environment) map[string]string {
 			"            # busybox\\\n" +
 			"            adduser -h \"${HOME}\" -u ${USERID} -D -H -G ${GROUPNAME} ${USERNAME} || \\\n" +
 			"            # arch linux\\\n" +
-			"            useradd --no-user-group --gid ${GROUPID} --home-dir \"${HOME}\" --create-home ${USERNAME} \\\n" +
+			"            useradd --no-user-group --gid ${GROUPID} --uid ${USERID} --home-dir \"${HOME}\" --create-home ${USERNAME} \\\n" +
 			"        ) > /dev/null 2>&1 ; \\\n" +
 			"    fi ;\n\n" +
 			"USER ${USERNAME}",
