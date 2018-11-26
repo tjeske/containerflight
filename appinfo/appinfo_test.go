@@ -321,7 +321,7 @@ RUN if ! getent group testgroup > /dev/null 2>&1; then \
             # busybox\
             adduser -h "/home" -u 1234 -D -H -G testgroup testuser || \
             # arch linux\
-            useradd --no-user-group --gid 5678 --home-dir "/home" --create-home testuser \
+            useradd --no-user-group --gid 5678 --uid 1234 --home-dir "/home" --create-home testuser \
         ) > /dev/null 2>&1 ; \
     fi ;
 
