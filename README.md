@@ -28,10 +28,10 @@ image:
 
 # Getting started
 
-1. Download the containerflight binary from [github](https://github.com/tjeske/containerflight/releases/latest) (or build it from source). It is recommended to store it in your `$PATH` so that you can directly run containerflight apps. Don't forget to set the executable flag for the containerflight executable. The following snippet installs the latest stable release of containerflight into `/usr/local/bin/`.
+1. Download the containerflight binary from [github](https://github.com/tjeske/containerflight/releases/latest) (or build it from source). It is recommended to store it in your `$PATH` so that you can directly run containerflight apps. Don't forget to set the executable flag for the containerflight executable. The following snippet installs the latest stable release of containerflight for Linux into `/usr/local/bin/`.
 
     ```bash
-    sudo curl -L https://github.com/tjeske/containerflight/releases/download/0.2/containerflight -o /usr/local/bin/containerflight
+    sudo curl -L https://github.com/tjeske/containerflight/releases/download/0.2.1/containerflight_linux_amd64 -o /usr/local/bin/containerflight
     sudo chmod +x /usr/local/bin/containerflight
     ```
 
@@ -158,7 +158,7 @@ Containerflight makes it easy to run such applications with its own library depe
 1. Install Go >= 1.10
 2. Get dep: `go get -u github.com/golang/dep/cmd/dep`
 3. Install dependencies: `dep ensure -v`
-4. Build: `go build -ldflags '-s'`
+4. Build: `go build -a -ldflags '-extldflags "-static" -s'`
 
 # Contributing
 
