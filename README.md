@@ -54,7 +54,8 @@ gui: true
 image:
     base: "docker://ubuntu:18.04"
     dockerfile: |
-        RUN sh myscript.sh
+        ${APT_INSTALL(gcc)}
+        ENTRYPOINT [ "/usr/bin/gcc" ]
 
 runtime:
     docker:
@@ -129,7 +130,9 @@ You can use parameters in an app file to consider the current user context.
 - `${GROUPID}`: primary group ID of the current user
 - `${HOME}`: current user's home directory
 - `${PWD}`: current working directory
-- `${ENV:<envname>}`: value of an environment variable (e.g. `${ENV:http_proxy}`)
+- `${ENV(<envname>)}`: value of an environment variable (e.g. `${ENV(http_proxy)}`)
+- `${APT_INSTALL(pkg1, pkg2, ...)}`: run `apt-get`and install packages (e.g. `${APT_INSTALL(gcc, wget)}`)
+- `${ADD(source, target)}`: load a text file and store its content in the image (e.g. `${ADD(${HOME}/.git-credentials, /root/.git-credentials)}`)
 
 # Why containerflight?
 
