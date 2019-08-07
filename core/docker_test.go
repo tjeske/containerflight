@@ -16,15 +16,16 @@ package core
 
 import (
 	"errors"
+	"io"
+	"regexp"
+	"testing"
+
 	"github.com/docker/docker/api/types"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/tjeske/containerflight/appinfo"
 	"github.com/tjeske/containerflight/util"
 	"golang.org/x/net/context"
-	"io"
-	"regexp"
-	"testing"
 )
 
 type mockHttpApiClient struct {
@@ -175,7 +176,7 @@ func TestGetRunCmdArgs(t *testing.T) {
 	expArgs := []string{
 		"--rm",
 		"--label", "containerflight_appFile=/testAppFile",
-		"--label", "containerflight_image=containerflight_testAppFile:unknown",
+		"--label", "containerflight_image=containerflight_testappfile:unknown",
 		"--label", "containerflight_hash=562a792d764ddceb355634b2ccee3878edf696021767ff0e8144eab2e2bf035f",
 		"--label", "containerflight_version=" + containerflightVersion,
 		"-v", "/myworkingdir:/myworkingdir",
@@ -218,7 +219,7 @@ func TestGetDockerContainerLabel(t *testing.T) {
 	dockerClient := newDockerClient(appInfo)
 	label := dockerClient.getDockerContainerLabel()
 
-	assert.Equal(t, "containerflight_testAppFile:unknown", label)
+	assert.Equal(t, "containerflight_testappfile:unknown", label)
 }
 
 func TestGetDockerContainerLabelVersion(t *testing.T) {
@@ -228,7 +229,7 @@ func TestGetDockerContainerLabelVersion(t *testing.T) {
 	dockerClient := newDockerClient(appInfo)
 	label := dockerClient.getDockerContainerLabel()
 
-	assert.Equal(t, "containerflight_testAppFile:1.2.3", label)
+	assert.Equal(t, "containerflight_testappfile:1.2.3", label)
 }
 
 func TestGetDockerContainerHash(t *testing.T) {

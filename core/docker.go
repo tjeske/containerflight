@@ -18,6 +18,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"regexp"
+	"strings"
+
 	"github.com/docker/cli/cli/command"
 	cmd_container "github.com/docker/cli/cli/command/container"
 	cmd_build "github.com/docker/cli/cli/command/image"
@@ -31,10 +37,6 @@ import (
 	"github.com/tjeske/containerflight/util"
 	"github.com/tjeske/containerflight/version"
 	"golang.org/x/net/context"
-	"io"
-	"net/http"
-	"os"
-	"strings"
 )
 
 // "mock connectors" for unit-tesing
@@ -56,6 +58,8 @@ type DockerClient struct {
 	client    dockerHttpApiClient
 	dockerCli dockerCliClient
 }
+
+var notWordChar = regexp.MustCompile("\\W")
 
 // NewDockerClient creates a new Docker client using API 1.25 (implemented by Docker 1.13)
 func NewDockerClient(appInfo *appinfo.AppInfo) *DockerClient {
@@ -232,8 +236,11 @@ func (dc *DockerClient) getDockerContainerImageID(hashStr string) (string, error
 
 // generate a container label
 func (dc *DockerClient) getDockerContainerLabel() string {
-
-	label := "containerflight_" + dc.appInfo.GetAppName() + ":"
+	appNameNormalized := notWordChar.ReplaceAllString(dc.appInfo.GetAppName(), "")
+	if appNameNormalized == "" {
+		appNameNormalized = "unknown"
+	}
+	label := "containerflight_" + strings.ToLower(appNameNormalized) + ":"
 	appConfigVersion := dc.appInfo.GetAppVersion()
 	if appConfigVersion != "" {
 		label += appConfigVersion
