@@ -15,12 +15,6 @@
 package appinfo
 
 import (
-	"github.com/blang/semver"
-	yaml "github.com/go-yaml/yaml"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/afero"
-	"github.com/tjeske/containerflight/util"
-	"github.com/tjeske/containerflight/version"
 	"io"
 	"io/ioutil"
 	"os"
@@ -28,6 +22,13 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/blang/semver"
+	yaml "github.com/go-yaml/yaml"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
+	"github.com/tjeske/containerflight/util"
+	"github.com/tjeske/containerflight/version"
 )
 
 // "mock connectors" for unit-tesing
@@ -232,6 +233,27 @@ func (cfg *AppInfo) replaceParameters(str *string) {
 								"    rm -rf /var/lib/apt/lists/*"
 						}
 					}
+				case "ADD":
+					{
+						// ${ADD(...)}
+						args := strings.Split(split[3], ",")
+						for i := range args {
+							args[i] = strings.TrimSpace(args[i])
+						}
+
+						sourceFile := args[0]
+						targetFile := args[1]
+						cfg.replaceParameters(&sourceFile)
+						cfg.replaceParameters(&targetFile)
+
+						sourceFileReader, err := filesystem.Open(sourceFile)
+						util.CheckErr(err)
+
+						sourceFileContent, err := afero.ReadAll(sourceFileReader)
+						util.CheckErr(err)
+
+						return "RUN echo '" + strings.ReplaceAll(string(sourceFileContent), "\n", "\\n\\\n") + "' > \"" + targetFile + "\""
+					}
 				}
 			}
 			return "<<ERROR!>>"
@@ -251,7 +273,6 @@ func (cfg *AppInfo) GetResolvedAppConfig() string {
 	cfg.replaceParameters(&appConfigStr)
 
 	return appConfigStr
-
 }
 
 // GetAppFileDir returns the app file directory
