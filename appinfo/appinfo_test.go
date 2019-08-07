@@ -16,12 +16,13 @@ package appinfo
 
 import (
 	"fmt"
+	"testing"
+
 	yaml "github.com/go-yaml/yaml"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/tjeske/containerflight/util"
 	"github.com/tjeske/containerflight/version"
-	"testing"
 )
 
 func init() {
@@ -181,6 +182,23 @@ func TestDockerfileApt(t *testing.T) {
 			"    export DEBIAN_FRONTEND=noninteractive && \\\n"+
 			"    apt-get install -y pkg1 pkg2 && \\\n"+
 			"    rm -rf /var/lib/apt/lists/*\n")
+
+	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
+	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
+}
+
+func TestDockerfileAdd(t *testing.T) {
+
+	filesystem.Mkdir("/foo", 0755)
+	afero.WriteFile(filesystem, "/foo/bar", []byte("Hello\nWorld!\n"), 0644)
+
+	appConfigStr :=
+		"image:\n" +
+			"    dockerfile: |\n" +
+			"        ${ADD(/foo/bar, /to)}\n"
+
+	expDockerfile := fmt.Sprintf(dockerFileTmpl,
+		"RUN echo 'Hello\\n\\\nWorld!\\n\\\n' > \"/to\"\n")
 
 	appInfo := NewFakeAppInfo(&filesystem, "/testAppFile", appConfigStr)
 	assert.Equal(t, expDockerfile, appInfo.GetDockerfile())
