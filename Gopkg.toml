@@ -38,7 +38,7 @@
 
 [[constraint]]
     name = "github.com/spf13/afero"
-    revision = "v1.1.2"
+    revision = "v1.2.2"
 
 [[override]]
     name = "github.com/docker/cli"
