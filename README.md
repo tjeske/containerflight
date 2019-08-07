@@ -155,7 +155,7 @@ Containerflight makes it easy to run such applications with its own library depe
 
 # Build
 
-1. Install Go >= 1.10
+1. Install Go >= 1.12
 2. Get dep: `go get -u github.com/golang/dep/cmd/dep`
 3. Install dependencies: `dep ensure -v`
 4. Build: `go build -a -ldflags '-extldflags "-static" -s'`
