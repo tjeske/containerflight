@@ -19,7 +19,7 @@ import (
 	"github.com/tjeske/containerflight/util"
 )
 
-var versionStr = "0.2.0-snapshot"
+var versionStr = "0.2.2"
 
 // ContainerFlightVersion returns the current containerflight version
 func ContainerFlightVersion() semver.Version {
