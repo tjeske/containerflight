@@ -64,7 +64,7 @@ type dockerCliClient interface {
 
 // DockerClient abstracts the containerflight communication with a moby daemon
 type DockerClient struct {
-	appInfo   config
+	config    config
 	client    dockerHttpApiClient
 	dockerCli dockerCliClient
 }
@@ -72,7 +72,7 @@ type DockerClient struct {
 var notWordChar = regexp.MustCompile("\\W")
 
 // NewDockerClient creates a new Docker client using API 1.25 (implemented by Docker 1.13)
-func NewDockerClient(appInfo config) *DockerClient {
+func NewDockerClient(config config) *DockerClient {
 	os.Setenv("DOCKER_API_VERSION", "1.25")
 
 	// Docker HTTP API client
@@ -87,7 +87,7 @@ func NewDockerClient(appInfo config) *DockerClient {
 	err = dockerCli.Initialize(opts)
 	util.CheckErr(err)
 
-	return &DockerClient{appInfo: appInfo, client: client, dockerCli: dockerCli}
+	return &DockerClient{config: config, client: client, dockerCli: dockerCli}
 }
 
 // build a Docker container
@@ -143,7 +143,7 @@ func (dc *DockerClient) createTempDockerFile(dockerBuildCtx string, label string
 	tmpDockerFile, err := afero.TempFile(filesystem, dockerBuildCtx, label+"_")
 	util.CheckErr(err)
 
-	dockerfileContent := dc.appInfo.GetDockerfile()
+	dockerfileContent := dc.config.GetDockerfile()
 	_, err = tmpDockerFile.Write([]byte(dockerfileContent))
 	util.CheckErr(err)
 
@@ -152,13 +152,13 @@ func (dc *DockerClient) createTempDockerFile(dockerBuildCtx string, label string
 
 // get Docker build command args
 func (dc *DockerClient) getBuildCmdArgs(dockerfile string, dockerBuildCtx string, label string, hashStr string) []string {
-	description := dc.appInfo.GetAppDescription()
+	description := dc.config.GetAppDescription()
 
 	buildCmd := []string{
 		dockerBuildCtx,
 		"-f", dockerfile,
 		"--label", "containerflight=true",
-		"--label", "containerflight_appFile=" + dc.appInfo.GetAppConfigFile(),
+		"--label", "containerflight_appFile=" + dc.config.GetAppConfigFile(),
 		"--label", "containerflight_hash=" + hashStr,
 		"--label", "containerflight_cfVersion=" + containerflightVersion,
 		"--label", "containerflight_description=" + description,
@@ -186,9 +186,9 @@ func (dc *DockerClient) run(args []string) {
 // return Docker image Id, if image does not exists build it
 func (dc *DockerClient) getImageID() string {
 
-	appInfo := dc.appInfo
+	config := dc.config
 
-	AppFileDir := appInfo.GetAppFileDir()
+	AppFileDir := config.GetAppFileDir()
 	containerLabel := dc.getDockerContainerLabel()
 	hashStr := dc.getDockerContainerHash()
 
@@ -204,10 +204,10 @@ func (dc *DockerClient) getImageID() string {
 // get Docker run command args
 func (dc *DockerClient) getRunCmdArgs(imageID string, args []string) []string {
 
-	appInfo := dc.appInfo
+	config := dc.config
 
-	appConfigFile := appInfo.GetAppConfigFile()
-	dockerRunArgs := appInfo.GetDockerRunArgs()
+	appConfigFile := config.GetAppConfigFile()
+	dockerRunArgs := config.GetDockerRunArgs()
 	containerLabel := dc.getDockerContainerLabel()
 	hashStr := dc.getDockerContainerHash()
 
@@ -246,12 +246,12 @@ func (dc *DockerClient) getDockerContainerImageID(hashStr string) (string, error
 
 // generate a container label
 func (dc *DockerClient) getDockerContainerLabel() string {
-	appNameNormalized := notWordChar.ReplaceAllString(dc.appInfo.GetAppName(), "")
+	appNameNormalized := notWordChar.ReplaceAllString(dc.config.GetAppName(), "")
 	if appNameNormalized == "" {
 		appNameNormalized = "unknown"
 	}
 	label := "containerflight_" + strings.ToLower(appNameNormalized) + ":"
-	appConfigVersion := dc.appInfo.GetAppVersion()
+	appConfigVersion := dc.config.GetAppVersion()
 	if appConfigVersion != "" {
 		label += appConfigVersion
 	} else {
@@ -263,7 +263,7 @@ func (dc *DockerClient) getDockerContainerLabel() string {
 // get the corresponding hash value for an app file
 func (dc *DockerClient) getDockerContainerHash() string {
 
-	appConfigStr := dc.appInfo.GetResolvedAppConfig()
+	appConfigStr := dc.config.GetResolvedAppConfig()
 
 	hash := sha256.New()
 
@@ -275,7 +275,7 @@ func (dc *DockerClient) getDockerContainerHash() string {
 	hash.Write([]byte(containerflightVersion))
 
 	// hash Docker build context if relevant
-	dockerBuildCtx := dc.appInfo.GetAppFileDir()
+	dockerBuildCtx := dc.config.GetAppFileDir()
 	if dc.isContextUsed() {
 		afero.Walk(filesystem, dockerBuildCtx, func(fileName string, fi os.FileInfo, err error) error {
 
@@ -307,7 +307,7 @@ func (dc *DockerClient) getDockerContainerHash() string {
 
 // isContextUsed returns true if files from the Docker build context should be added to the Docker image
 func (dc *DockerClient) isContextUsed() (isUsed bool) {
-	dockerfileLines := strings.Split(dc.appInfo.GetDockerfile(), "\n")
+	dockerfileLines := strings.Split(dc.config.GetDockerfile(), "\n")
 	isUsed = false
 	for _, dockerfileLine := range dockerfileLines {
 		linePreProcessed := strings.ToUpper(strings.TrimSpace(dockerfileLine))
