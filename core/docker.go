@@ -33,7 +33,6 @@ import (
 	"github.com/docker/docker/pkg/term"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"github.com/tjeske/containerflight/appinfo"
 	"github.com/tjeske/containerflight/util"
 	"github.com/tjeske/containerflight/version"
 	"golang.org/x/net/context"
@@ -42,6 +41,17 @@ import (
 // "mock connectors" for unit-tesing
 var filesystem = afero.NewOsFs()
 var containerflightVersion = version.ContainerFlightVersion().String()
+
+type config interface {
+	GetDockerfile() string
+	GetAppDescription() string
+	GetAppConfigFile() string
+	GetAppFileDir() string
+	GetAppVersion() string
+	GetDockerRunArgs() []string
+	GetAppName() string
+	GetResolvedAppConfig() string
+}
 
 type dockerHttpApiClient interface {
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
@@ -54,7 +64,7 @@ type dockerCliClient interface {
 
 // DockerClient abstracts the containerflight communication with a moby daemon
 type DockerClient struct {
-	appInfo   *appinfo.AppInfo
+	appInfo   config
 	client    dockerHttpApiClient
 	dockerCli dockerCliClient
 }
@@ -62,7 +72,7 @@ type DockerClient struct {
 var notWordChar = regexp.MustCompile("\\W")
 
 // NewDockerClient creates a new Docker client using API 1.25 (implemented by Docker 1.13)
-func NewDockerClient(appInfo *appinfo.AppInfo) *DockerClient {
+func NewDockerClient(appInfo config) *DockerClient {
 	os.Setenv("DOCKER_API_VERSION", "1.25")
 
 	// Docker HTTP API client
