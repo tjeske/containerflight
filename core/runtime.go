@@ -34,7 +34,7 @@ func PrintDockerfile(yamlAppConfigFileName string) {
 func PrintDockerRunArgs(yamlAppConfigFileName string) {
 
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
-	dockerClient := NewDockerClient(appInfo)
+	dockerClient := NewContainerFlightDockerClient(appInfo)
 
 	imageID := dockerClient.getImageID()
 	dockerRunCmdArgs := dockerClient.getRunCmdArgs(imageID, []string{})
@@ -46,7 +46,7 @@ func PrintDockerRunArgs(yamlAppConfigFileName string) {
 func Build(yamlAppConfigFileName string) {
 
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
-	dockerClient := NewDockerClient(appInfo)
+	dockerClient := NewContainerFlightDockerClient(appInfo)
 
 	AppFileDir := appInfo.GetAppFileDir()
 
@@ -62,7 +62,7 @@ func Build(yamlAppConfigFileName string) {
 func Run(yamlAppConfigFileName string, args []string) {
 
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
-	dockerClient := NewDockerClient(appInfo)
+	dockerClient := NewContainerFlightDockerClient(appInfo)
 
 	dockerClient.run(args)
 }

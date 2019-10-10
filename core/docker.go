@@ -34,22 +34,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/tjeske/containerflight/util"
-	"github.com/tjeske/containerflight/version"
 	"golang.org/x/net/context"
 )
 
 // "mock connectors" for unit-tesing
 var filesystem = afero.NewOsFs()
-var containerflightVersion = version.ContainerFlightVersion().String()
 
 type config interface {
 	GetDockerfile() string
-	GetAppDescription() string
-	GetAppConfigFile() string
 	GetAppFileDir() string
-	GetAppVersion() string
-	GetDockerRunArgs() []string
-	GetAppName() string
 	GetResolvedAppConfig() string
 }
 
@@ -67,12 +60,13 @@ type DockerClient struct {
 	config    config
 	client    dockerHttpApiClient
 	dockerCli dockerCliClient
+	version   string
 }
 
 var notWordChar = regexp.MustCompile("\\W")
 
 // NewDockerClient creates a new Docker client using API 1.25 (implemented by Docker 1.13)
-func NewDockerClient(config config) *DockerClient {
+func NewDockerClient(config config, version string) *DockerClient {
 	os.Setenv("DOCKER_API_VERSION", "1.25")
 
 	// Docker HTTP API client
@@ -87,7 +81,7 @@ func NewDockerClient(config config) *DockerClient {
 	err = dockerCli.Initialize(opts)
 	util.CheckErr(err)
 
-	return &DockerClient{config: config, client: client, dockerCli: dockerCli}
+	return &DockerClient{config: config, client: client, dockerCli: dockerCli, version: version}
 }
 
 // build a Docker container
@@ -152,24 +146,11 @@ func (dc *DockerClient) createTempDockerFile(dockerBuildCtx string, label string
 
 // get Docker build command args
 func (dc *DockerClient) getBuildCmdArgs(dockerfile string, dockerBuildCtx string, label string, hashStr string) []string {
-	description := dc.config.GetAppDescription()
-
-	buildCmd := []string{
-		dockerBuildCtx,
-		"-f", dockerfile,
-		"--label", "containerflight=true",
-		"--label", "containerflight_appFile=" + dc.config.GetAppConfigFile(),
-		"--label", "containerflight_hash=" + hashStr,
-		"--label", "containerflight_cfVersion=" + containerflightVersion,
-		"--label", "containerflight_description=" + description,
-		"-t", label,
-	}
-
-	return buildCmd
+	return []string{}
 }
 
-// run a Docker container
-func (dc *DockerClient) run(args []string) {
+// Run a Docker container
+func (dc *DockerClient) Run(args []string) {
 	cmdDockerRun := cmd_container.NewRunCommand(dc.dockerCli)
 	imageID := dc.getImageID()
 	dockerRunCmdArgs := dc.getRunCmdArgs(imageID, args)
@@ -203,27 +184,7 @@ func (dc *DockerClient) getImageID() string {
 
 // get Docker run command args
 func (dc *DockerClient) getRunCmdArgs(imageID string, args []string) []string {
-
-	config := dc.config
-
-	appConfigFile := config.GetAppConfigFile()
-	dockerRunArgs := config.GetDockerRunArgs()
-	containerLabel := dc.getDockerContainerLabel()
-	hashStr := dc.getDockerContainerHash()
-
-	runCmdArgs := []string{
-		"--rm",
-		"--label", "containerflight_appFile=" + appConfigFile,
-		"--label", "containerflight_image=" + containerLabel,
-		"--label", "containerflight_hash=" + hashStr,
-		"--label", "containerflight_version=" + containerflightVersion,
-	}
-
-	runCmdArgs = append(runCmdArgs, dockerRunArgs...)
-	runCmdArgs = append(runCmdArgs, imageID)
-	runCmdArgs = append(runCmdArgs, args...)
-
-	return runCmdArgs
+	return []string{}
 }
 
 // getDockerContainerImageID returns the Docker image ID for an app hash value
@@ -246,18 +207,7 @@ func (dc *DockerClient) getDockerContainerImageID(hashStr string) (string, error
 
 // generate a container label
 func (dc *DockerClient) getDockerContainerLabel() string {
-	appNameNormalized := notWordChar.ReplaceAllString(dc.config.GetAppName(), "")
-	if appNameNormalized == "" {
-		appNameNormalized = "unknown"
-	}
-	label := "containerflight_" + strings.ToLower(appNameNormalized) + ":"
-	appConfigVersion := dc.config.GetAppVersion()
-	if appConfigVersion != "" {
-		label += appConfigVersion
-	} else {
-		label += "unknown"
-	}
-	return label
+	return "unknown"
 }
 
 // get the corresponding hash value for an app file
@@ -272,7 +222,7 @@ func (dc *DockerClient) getDockerContainerHash() string {
 	hash.Write(appConfigBytes)
 
 	// hash containerflight version
-	hash.Write([]byte(containerflightVersion))
+	hash.Write([]byte(dc.version))
 
 	// hash Docker build context if relevant
 	dockerBuildCtx := dc.config.GetAppFileDir()
