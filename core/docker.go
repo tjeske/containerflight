@@ -44,6 +44,7 @@ type config interface {
 	GetDockerfile() string
 	GetAppFileDir() string
 	GetResolvedAppConfig() string
+	GetDockerRunArgs() []string
 }
 
 type dockerHttpApiClient interface {
@@ -146,14 +147,42 @@ func (dc *DockerClient) createTempDockerFile(dockerBuildCtx string, label string
 
 // get Docker build command args
 func (dc *DockerClient) getBuildCmdArgs(dockerfile string, dockerBuildCtx string, label string, hashStr string) []string {
-	return []string{}
+	buildCmd := []string{
+		dockerBuildCtx,
+		"-f", dockerfile,
+		"--label", "containerflight_hash=" + hashStr,
+		"-t", label,
+	}
+
+	return buildCmd
 }
 
 // Run a Docker container
 func (dc *DockerClient) Run(args []string) {
 	cmdDockerRun := cmd_container.NewRunCommand(dc.dockerCli)
+
+	config := dc.config
+	dockerRunArgs := config.GetDockerRunArgs()
+
 	imageID := dc.getImageID()
-	dockerRunCmdArgs := dc.getRunCmdArgs(imageID, args)
+
+	dockerRunCmdArgs := dc.getRunCmdArgs(dockerRunArgs, imageID, args)
+	cmdDockerRun.SetArgs(dockerRunCmdArgs)
+	cmdDockerRun.SilenceErrors = true
+	cmdDockerRun.SilenceUsage = true
+
+	log.Debug("execute \"docker run " + strings.Join(dockerRunCmdArgs, " ") + "\"")
+
+	err := cmdDockerRun.Execute()
+	util.CheckErr(err)
+}
+
+func (dc *DockerClient) Run2(dockerRunArgs []string, args []string) {
+	cmdDockerRun := cmd_container.NewRunCommand(dc.dockerCli)
+
+	imageID := dc.getImageID()
+
+	dockerRunCmdArgs := dc.getRunCmdArgs(dockerRunArgs, imageID, args)
 	cmdDockerRun.SetArgs(dockerRunCmdArgs)
 	cmdDockerRun.SilenceErrors = true
 	cmdDockerRun.SilenceUsage = true
@@ -183,8 +212,16 @@ func (dc *DockerClient) getImageID() string {
 }
 
 // get Docker run command args
-func (dc *DockerClient) getRunCmdArgs(imageID string, args []string) []string {
-	return []string{}
+func (dc *DockerClient) getRunCmdArgs(dockerRunArgs []string, imageID string, args []string) []string {
+	runCmdArgs := []string{
+		"--rm",
+	}
+
+	runCmdArgs = append(runCmdArgs, dockerRunArgs...)
+	runCmdArgs = append(runCmdArgs, imageID)
+	runCmdArgs = append(runCmdArgs, args...)
+
+	return runCmdArgs
 }
 
 // getDockerContainerImageID returns the Docker image ID for an app hash value

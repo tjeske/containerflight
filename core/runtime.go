@@ -64,5 +64,5 @@ func Run(yamlAppConfigFileName string, args []string) {
 	appInfo := appinfo.NewAppInfo(yamlAppConfigFileName)
 	dockerClient := NewContainerFlightDockerClient(appInfo)
 
-	dockerClient.run(args)
+	dockerClient.Run(args)
 }

@@ -31,7 +31,6 @@ type containerFlightConfig interface {
 	GetAppVersion() string
 	GetAppName() string
 	GetAppDescription() string
-	GetDockerRunArgs() []string
 }
 
 // NewContainerFlightDockerClient creates a new Docker client using API 1.25 (implemented by Docker 1.13)
