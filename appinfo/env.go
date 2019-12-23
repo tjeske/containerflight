@@ -15,7 +15,6 @@
 package appinfo
 
 import (
-	"os"
 	"os/user"
 	"path/filepath"
 
@@ -45,11 +44,14 @@ var getEnv = func(appConfigFile string) environment {
 	currentUser, err := user.Current()
 	util.CheckErr(err)
 
-	groupName, err := user.LookupGroupId(currentUser.Gid)
-	util.CheckErr(err)
+	// group id lookup could fail on Windows
+	groupNameRaw, err := user.LookupGroupId(currentUser.Gid)
+	groupName := "UNKNOWN"
+	if err == nil {
+		groupName = groupNameRaw.Name
+	}
 
-	workingDir, err := os.Getwd()
-	util.CheckErr(err)
+	workingDir := util.GetWorkingDir()
 
 	// create environment object
 	var env = environment{
@@ -57,7 +59,7 @@ var getEnv = func(appConfigFile string) environment {
 		appFileDir:    appFileDir,
 		userName:      currentUser.Username,
 		userID:        currentUser.Uid,
-		groupName:     groupName.Name,
+		groupName:     groupName,
 		groupID:       currentUser.Gid,
 		homeDir:       currentUser.HomeDir,
 		workingDir:    workingDir,

@@ -18,8 +18,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -335,9 +337,11 @@ func (cfg *AppInfo) GetDockerfile() string {
 
 	dockerfile := cfg.handleDockerfileLoad(cfg.appConfig.Image.Dockerfile)
 
-	dockerfileFinal += cfg.resolvedParams["SET_PROXY"] + "\n" +
-		dockerfile + "\n" +
-		cfg.resolvedParams["USER_CTX"]
+	dockerfileFinal += cfg.resolvedParams["SET_PROXY"] + "\n" + dockerfile
+	// no user mapping required on windows
+	if runtime.GOOS != "windows" {
+		dockerfileFinal += "\n" + cfg.resolvedParams["USER_CTX"]
+	}
 
 	// replace parameters
 	cfg.replaceParameters(&dockerfileFinal)
@@ -372,17 +376,19 @@ func (cfg *AppInfo) handleDockerfileLoad(dockerfile string) string {
 
 // GetDockerRunArgs returns for an app file the resolved docker run arguments
 func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
+	unixWorkingDir := util.GetUnixFilePath(util.GetWorkingDir())
 	defaultDockerArgs := map[string]string{
 		"-h": "flybydocker",
-		"-w": "${PWD}",
+		"-w": unixWorkingDir,
 	}
 	for _, arg := range cfg.appConfig.Runtime.Docker.RunArgs {
 		if _, ok := defaultDockerArgs[arg]; ok {
 			delete(defaultDockerArgs, arg)
 		}
 	}
+
 	dockerRunArgs = append(
-		[]string{"-v", "${PWD}:${PWD}"},
+		[]string{"-v", cfg.env.workingDir + ":" + unixWorkingDir},
 		cfg.appConfig.Runtime.Docker.RunArgs...,
 	)
 
@@ -414,24 +420,24 @@ func (cfg *AppInfo) GetDockerRunArgs() (dockerRunArgs []string) {
 		dockerRunArgs = append(dockerRunArgs, key, value)
 	}
 
-	// replace parameters
-	for i := range dockerRunArgs {
-		cfg.replaceParameters(&dockerRunArgs[i])
-	}
-
 	// use absolute dirs for volumes so that duplicated mount points can be detected by Docker
 	for i := range dockerRunArgs {
 		if strings.TrimSpace(dockerRunArgs[i]) == "-v" && i+1 < len(dockerRunArgs) {
+			// first split by ":" and then replace parameters due to windows drive letters
 			dirs := strings.Split(dockerRunArgs[i+1], ":")
 			if len(dirs) == 2 {
-				hostPath, _ := filepath.Abs(dirs[0])
-				containerPath, _ := filepath.Abs(dirs[1])
+				hostPathTmp := strings.TrimPrefix(strings.TrimSuffix(dirs[0], `"`), `"`)
+				cfg.replaceParameters(&hostPathTmp)
+				hostPath, _ := filepath.Abs(filepath.FromSlash(filepath.ToSlash(hostPathTmp)))
+				containerPathTmp := strings.TrimPrefix(strings.TrimSuffix(dirs[1], `"`), `"`)
+				cfg.replaceParameters(&containerPathTmp)
+				containerPath := path.Clean(util.GetUnixFilePath(containerPathTmp))
 				i++
 				dockerRunArgs[i] = hostPath + ":" + containerPath
 			}
-
+		} else {
+			cfg.replaceParameters(&dockerRunArgs[i])
 		}
-		cfg.replaceParameters(&dockerRunArgs[i])
 	}
 
 	log.Debug("dockerRunArgs: ", dockerRunArgs)

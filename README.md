@@ -31,7 +31,7 @@ image:
 1. Download the containerflight binary from [github](https://github.com/tjeske/containerflight/releases/latest) (or build it from source). It is recommended to store it in your `$PATH` so that you can directly run containerflight apps. Don't forget to set the executable flag for the containerflight executable. The following snippet installs the latest stable release of containerflight for Linux into `/usr/local/bin/`.
 
     ```bash
-    sudo curl -L https://github.com/tjeske/containerflight/releases/download/0.2.1/containerflight_linux_amd64 -o /usr/local/bin/containerflight
+    sudo curl -L https://github.com/tjeske/containerflight/releases/download/0.3.0/containerflight_linux_amd64 -o /usr/local/bin/containerflight
     sudo chmod +x /usr/local/bin/containerflight
     ```
 
@@ -79,7 +79,7 @@ image:
         ...
 ```
 
-Containerflight has an integrated Docker client which supports API 1.25 (implemented by Docker 1.13) and can directly talk to the Docker daemon. This makes it easier to run apps on a CI build-slave like Jenkins.
+Containerflight has an integrated Docker client which supports API 1.25 (implemented by Docker 19.03.6) and can directly talk to the Docker daemon. This makes it easier to run apps on a CI build-slave like Jenkins.
 
 A Docker image serves as a basis (`base`) and can be extended by using the Dockerfile syntax. See [https://docs.docker.com/engine/reference/builder/](https://docs.docker.com/engine/reference/builder/) for more information.
 
@@ -159,7 +159,7 @@ Containerflight makes it easy to run such applications with its own library depe
 # Build
 
 1. Install Go >= 1.13
-2. Build: `go build -a -ldflags '-extldflags "-static" -s'`
+2. Build: `go build` or `go build -a -ldflags '-extldflags "-static" -s'` (static linking, not supported by OS X)
 
 # Contributing
 

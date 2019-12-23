@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package util
 
 import (
-	"github.com/blang/semver"
-	"github.com/tjeske/containerflight/util"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var versionStr = "0.3.0"
+func TestGetUnixFilePathWindows(t *testing.T) {
+	separator = '\\'
 
-// ContainerFlightVersion returns the current containerflight version
-func ContainerFlightVersion() semver.Version {
-	containerFlightVersion, err := semver.Make(versionStr)
-	util.CheckErr(err)
-	return containerFlightVersion
+	assert.Equal(t, "/a/b", GetUnixFilePath("/a/b"))
+	assert.Equal(t, "a/b", GetUnixFilePath("a/b"))
+	assert.Equal(t, "a", GetUnixFilePath("a"))
+	assert.Equal(t, "/c/a/b", GetUnixFilePath("c:\\a\\b"))
+	assert.Equal(t, "/a/b", GetUnixFilePath("\\a\\b"))
+	assert.Equal(t, "a/b", GetUnixFilePath("a\\b"))
 }

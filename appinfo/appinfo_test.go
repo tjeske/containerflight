@@ -28,6 +28,10 @@ import (
 func init() {
 	// emulate file system
 	filesystem = afero.NewMemMapFs()
+
+	util.GetWorkingDir = func() string {
+		return "/myworkingdir"
+	}
 }
 
 func TestEmpty(t *testing.T) {
