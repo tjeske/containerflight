@@ -14,7 +14,7 @@ matrix:
   allow_failures:
   - go: tip
 script:
-- CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static" -s'
+- CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static" -s' -o containerflight_linux_amd64
 - go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 - ./system-tests/run.sh
 after_success:
@@ -24,7 +24,14 @@ deploy:
   skip_cleanup: true # Important, otherwise the build output would be purged.
   api_key:
     secure: MhcI+AvfR9zqV+VuhXUUjx114zbpW/u87CEYDGxag4RRHGrCbpSvIFUcVvOlUg/KAhcPSWF3HGRsjNe72kJvyV0eEDHgpJJWreA9ikmhsXtF29XN67uakara1070hyt43ACx6kvajH9V8pkP44HZK/Ov7fWbWtusc/Bk+1ndnkjJFkWfG2xQgT9w/OHE8UR0p2flnh+SR/qdURG4Z3/5bw0X+g1l+cMmV5zYYkGUgMJhNLjbiVXKqH3Wedt4POSmryqgAVZ8XCyp9YQES9fW8CO0iCF2ehKdqWxKJH2wflTrIrwV9FAGoSG3HNIzWLcKZgv1btZujkNfKKIOI6Fok36e8+TPZ3jGo9kKLKKaD7OZvuS/8IzhLMBFpRCYmH7rLXEi53kcsNHQaG3arqahVJ6wojQ0IXKhTqD6uiY+0yeBHjY+sQ3EhAkyXAJZp+I+IgzlRKCeKdyjzwpdwtzDcfDNxaUJX6WU+AJ8Vbs7e/3kSS36jfk4S8HUQsFEU9+D2J/mdxYv4qX+2rtctfhKqCPifvSzo6gjR7ZIs13FzxueHD98q7nhHxxcQNCLVHiisoC6uF7jVVLdJd5tsSOmD+18RYkSBRPiwfN75oKJWvFG6XEOr3Dd+cKJbRPp8xjy3Bgn2LPo46INEOwPpSpvGimtLyBp6kbjckIeRNgJLf4=
-  file: containerflight
+  file:
+    - containerflight_linux_amd64
+    - containerflight_windows_amd64
+    - containerflight_darwin_amd64
+  script:
+    - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s' -o containerflight_linux_amd64
+    - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s' -o containerflight_windows_amd64
+    - CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -o containerflight_darwin_amd64
   on:
     repo: tjeske/containerflight
     tags: true # The deployment happens only if the commit has a tag.
