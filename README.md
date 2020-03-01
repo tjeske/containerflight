@@ -31,7 +31,7 @@ image:
 1. Download the containerflight binary from [github](https://github.com/tjeske/containerflight/releases/latest) (or build it from source). It is recommended to store it in your `$PATH` so that you can directly run containerflight apps. Don't forget to set the executable flag for the containerflight executable. The following snippet installs the latest stable release of containerflight for Linux into `/usr/local/bin/`.
 
     ```bash
-    sudo curl -L https://github.com/tjeske/containerflight/releases/download/0.3.0/containerflight_linux_amd64 -o /usr/local/bin/containerflight
+    sudo curl -L https://github.com/tjeske/containerflight/releases/download/v0.3.0/containerflight_linux_amd64 -o /usr/local/bin/containerflight
     sudo chmod +x /usr/local/bin/containerflight
     ```
 
