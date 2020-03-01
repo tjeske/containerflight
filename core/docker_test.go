@@ -36,6 +36,8 @@ func init() {
 	// emulate file system
 	filesystem = afero.NewMemMapFs()
 
+	util.GetWorkingDir = func() string { return "/myworkingdir" }
+
 	// fake version number to have fixed hash values
 	containerflightVersion = "x.y.z"
 }

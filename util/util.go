@@ -15,8 +15,25 @@
 package util
 
 import (
+	"os"
+	"regexp"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 )
+
+// GetWorkingDir returns the current working directory
+var GetWorkingDir = func() string {
+	workingDir, err := os.Getwd()
+	CheckErr(err)
+	return workingDir
+}
+
+// configurable path separator for unit-tests
+var separator = os.PathSeparator
+
+// regex to check for windows drive letters
+var winDriveLetterRegex = regexp.MustCompile(`^([a-zA-Z]):/`)
 
 // CheckErr checks for an error
 // use this function after calling an error returning function
@@ -32,4 +49,21 @@ func CheckErrMsg(err error, msg string) {
 	if err != nil {
 		log.Fatal("ERROR: ", msg+" ("+err.Error()+")")
 	}
+}
+
+// GetUnixFilePath transforms a unix/windows file path into an unix file path
+func GetUnixFilePath(filePath string) string {
+	unixFilePath := ToSlash(filePath)
+	unixFilePath = winDriveLetterRegex.ReplaceAllString(unixFilePath, `/$1/`)
+	return unixFilePath
+}
+
+// ToSlash returns the result of replacing each separator character
+// in path with a slash ('/') character. Multiple separators are
+// replaced by multiple slashes.
+func ToSlash(path string) string {
+	if separator == '/' {
+		return path
+	}
+	return strings.ReplaceAll(path, string(separator), "/")
 }

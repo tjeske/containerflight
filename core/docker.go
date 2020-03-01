@@ -127,7 +127,7 @@ func (dc *DockerClient) removeImages(label string) {
 
 // create and populate temporary Dockerfile
 func (dc *DockerClient) createTempDockerFile(dockerBuildCtx string, label string) afero.File {
-	tmpDockerFile, err := afero.TempFile(filesystem, dockerBuildCtx, label+"_")
+	tmpDockerFile, err := afero.TempFile(filesystem, dockerBuildCtx, strings.ReplaceAll(label, ":", "_"))
 	util.CheckErr(err)
 
 	dockerfileContent := dc.appInfo.GetDockerfile()

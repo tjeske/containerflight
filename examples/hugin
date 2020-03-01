@@ -6,6 +6,11 @@ gui: true
 image:
     base: docker://ubuntu:18.04
     dockerfile: |
+
+        ${APT_INSTALL(software-properties-common)}
+
+        RUN add-apt-repository -y ppa:ubuntuhandbook1/apps
+
         ${APT_INSTALL(hugin)}
 
         ENTRYPOINT "/usr/bin/hugin"
