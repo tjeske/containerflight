@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -60,13 +59,12 @@ type DockerClient struct {
 
 var notWordChar = regexp.MustCompile("\\W")
 
-// NewDockerClient creates a new Docker client using API 1.25 (implemented by Docker 1.13)
+// NewDockerClient creates a new Docker client using API 1.25
 func NewDockerClient(appInfo *appinfo.AppInfo) *DockerClient {
 	os.Setenv("DOCKER_API_VERSION", "1.25")
 
 	// Docker HTTP API client
-	var httpClient *http.Client
-	client, err := client.NewClient(client.DefaultDockerHost, "1.30", httpClient, nil)
+	client, err := client.NewClientWithOpts(client.FromEnv)
 	util.CheckErr(err)
 
 	// Docker cli client
