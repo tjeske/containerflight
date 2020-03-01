@@ -30,7 +30,6 @@ import (
 	cliflags "github.com/docker/cli/cli/flags"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/term"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/tjeske/containerflight/appinfo"
@@ -71,8 +70,8 @@ func NewDockerClient(appInfo *appinfo.AppInfo) *DockerClient {
 	util.CheckErr(err)
 
 	// Docker cli client
-	stdin, stdout, stderr := term.StdStreams()
-	dockerCli := command.NewDockerCli(stdin, stdout, stderr)
+	dockerCli, err := command.NewDockerCli(command.WithStandardStreams())
+	util.CheckErr(err)
 	opts := cliflags.NewClientOptions()
 	err = dockerCli.Initialize(opts)
 	util.CheckErr(err)
