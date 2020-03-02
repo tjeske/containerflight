@@ -11,7 +11,9 @@ matrix:
   allow_failures:
   - go: tip
 script:
-- CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static" -s' -o containerflight
+- CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s' -o containerflight_linux_amd64
+- CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s' -o containerflight_windows_amd64
+- CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -o containerflight_darwin_amd64
 - go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 - ./system-tests/run.sh
 after_success:
@@ -25,10 +27,6 @@ deploy:
     - containerflight_linux_amd64
     - containerflight_windows_amd64
     - containerflight_darwin_amd64
-  script:
-    - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s' -o containerflight_linux_amd64
-    - CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -a -ldflags '-extldflags "-static" -s' -o containerflight_windows_amd64
-    - CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -a -o containerflight_darwin_amd64
   on:
     repo: tjeske/containerflight
     tags: true # The deployment happens only if the commit has a tag.

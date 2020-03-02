@@ -10,6 +10,8 @@ apps=(
     fedora
 )
 
+cd "${SCRIPT_DIR}/../" && go build
+
 for app in ${apps[@]}; do
     echo "******************************************"
     echo "testing ${app}..."
