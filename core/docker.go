@@ -268,21 +268,28 @@ func (dc *DockerClient) getDockerContainerHash() string {
 
 			// return on any error
 			if err != nil {
-				return err
+				log.Warn(err)
+				return nil
+			}
+
+			// skip directories
+			if fi.IsDir() {
+				return nil
 			}
 
 			// open files for hashing
 			fh, err := filesystem.Open(fileName)
+			defer fh.Close()
 			if err != nil {
-				return err
+				log.Warn(err)
+				return nil
 			}
 
 			// hash file
 			if _, err := io.Copy(hash, fh); err != nil {
-				return err
+				log.Warn(err)
+				return nil
 			}
-
-			fh.Close()
 
 			return nil
 		})
